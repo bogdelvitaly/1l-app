@@ -6,6 +6,10 @@ import { prisma } from "@/lib/prisma";
 export const { handlers, signIn, signOut, auth } = NextAuth({
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },
+  // Auth.js normally auto-detects a trusted host from the VERCEL env var, but
+  // that hasn't been reliably showing up in this project's Vercel functions —
+  // setting it explicitly avoids depending on that detection.
+  trustHost: true,
   providers: [
     Credentials({
       credentials: {
