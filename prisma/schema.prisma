@@ -2,12 +2,11 @@ generator client {
   provider = "prisma-client-js"
 }
 
-// Local dev uses SQLite (zero setup). For production, switch provider to
-// "postgresql" and set DATABASE_URL to the Neon connection string — no
-// other changes needed, since no field below uses a native enum type
-// (SQLite has none), just plain strings validated in code (see src/lib/types.ts).
+// Postgres (Neon) — no field below uses a native enum type, just plain
+// strings validated in code (see src/lib/types.ts), so the switch from the
+// original SQLite dev setup needed no other schema changes.
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
