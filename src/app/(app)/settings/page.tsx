@@ -35,11 +35,11 @@ export default async function SettingsPage(props: PageProps<"/settings">) {
 
   return (
     <div className="flex flex-col">
-      <div className="p-8 pb-0">
+      <div className="p-4 pb-0 sm:p-8 sm:pb-0">
         <h1 className="text-2xl font-extrabold text-[var(--text-primary)]">Настройки</h1>
       </div>
 
-      <div className="mt-8 flex gap-6 border-b border-[var(--devider)] px-8">
+      <div className="mt-8 flex gap-6 overflow-x-auto border-b border-[var(--devider)] px-4 sm:px-8">
         <TabLink tab="general" current={tab}>
           Общие настройки
         </TabLink>
@@ -48,7 +48,7 @@ export default async function SettingsPage(props: PageProps<"/settings">) {
         </TabLink>
       </div>
 
-      <div className="flex flex-col gap-8 p-8">
+      <div className="flex flex-col gap-8 p-4 sm:p-8">
         {imported && (
           <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-400">
             Импорт завершён: расходов — {searchParams?.expenses}, доходов — {searchParams?.incomes}, пропущено строк —{" "}
@@ -147,8 +147,8 @@ export default async function SettingsPage(props: PageProps<"/settings">) {
                   </form>
                 )}
 
-                <div className="w-full">
-                  <div className="flex h-12 items-center border-b border-[var(--devider)] px-2">
+                <div className="w-full overflow-x-auto">
+                  <div className="flex h-12 min-w-[550px] items-center border-b border-[var(--devider)] px-2">
                     <div className="min-w-[200px] flex-1 px-2 text-xs font-semibold text-[var(--text-inactive)]">
                       Имя
                     </div>
@@ -159,7 +159,7 @@ export default async function SettingsPage(props: PageProps<"/settings">) {
                     <div className="w-20 shrink-0 px-2" />
                   </div>
                   {users.map((u) => (
-                    <div key={u.id} className="flex h-16 items-center px-2">
+                    <div key={u.id} className="flex h-16 min-w-[550px] items-center px-2">
                       <div className="min-w-[200px] flex-1 px-2 text-sm font-medium text-[var(--text-primary)]">
                         {u.name}
                         {u.id === session?.user?.id && (

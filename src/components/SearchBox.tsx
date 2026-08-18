@@ -27,7 +27,7 @@ export function SearchBox({ placeholder = "Поиск..." }: { placeholder?: str
   }, [value]);
 
   return (
-    <div className="flex h-11 w-[352px] shrink-0 items-center gap-2 rounded-md border border-[var(--devider)] bg-[var(--surface)] px-4">
+    <div className="flex h-11 w-full items-center gap-2 rounded-md border border-[var(--devider)] bg-[var(--surface)] px-4 sm:w-[352px] sm:shrink-0">
       <SearchIcon className="text-[var(--text-inactive)]" />
       <input
         value={value}

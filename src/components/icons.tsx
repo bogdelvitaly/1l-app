@@ -78,6 +78,25 @@ export function CalendarIcon({ className }: IconProps) {
   );
 }
 
+export function MenuIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 20 14" width="20" height="14" fill="none" className={className}>
+      <path d="M0 1H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M0 7H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M0 13H20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function PlusIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 16 16" width="16" height="16" fill="none" className={className}>
+      <path d="M8 0V16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+      <path d="M0 8H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function IosArrowIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 10 10" width="10" height="10" fill="none" className={className}>

@@ -4,14 +4,17 @@ import { ExpenseCategoryBadge } from "@/components/ExpenseCategoryBadge";
 import { SearchBox } from "@/components/SearchBox";
 import { Pagination } from "@/components/Pagination";
 import { RowActions, EditTrigger } from "@/components/RowActions";
+import { PlusIcon } from "@/components/icons";
 import { createExpense, updateExpense, deleteExpense } from "./actions";
 
 function fmt(n: number) {
   return n.toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-// 24-column grid, matching the Figma table exactly.
-const GRID = "grid grid-cols-[repeat(24,minmax(0,1fr))] items-center px-6";
+// 24-column grid, matching the Figma table exactly. The min-width keeps every
+// column readable on narrow viewports instead of squishing — the table
+// scrolls horizontally within its container below that width.
+const GRID = "grid grid-cols-[repeat(24,minmax(0,1fr))] items-center px-6 min-w-[900px]";
 const COLUMNS = [
   { label: "Дата", col: "col-[1/span_3]" },
   { label: "Описание", col: "col-[4/span_9] min-w-[300px]" },
@@ -41,8 +44,8 @@ export default async function ExpensesPage(props: PageProps<"/expenses">) {
 
   return (
     <div className="flex flex-col">
-      <div className="flex items-center justify-between gap-4 p-8">
-        <div className="flex min-w-0 items-center gap-8">
+      <div className="flex flex-col gap-4 p-4 pb-0 sm:flex-row sm:items-center sm:justify-between sm:p-8 sm:pb-0">
+        <div className="flex flex-col gap-4 sm:min-w-0 sm:flex-row sm:items-center sm:gap-8">
           <h1 className="shrink-0 text-2xl font-extrabold text-[var(--text-primary)]">Расходы</h1>
           <SearchBox />
         </div>
@@ -52,7 +55,7 @@ export default async function ExpensesPage(props: PageProps<"/expenses">) {
           trigger={
             <button
               type="button"
-              className="flex h-11 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-[var(--accent-orange)] px-5 text-base font-medium whitespace-nowrap text-white hover:brightness-110"
+              className="hidden h-11 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-[var(--accent-orange)] px-5 text-base font-medium whitespace-nowrap text-white hover:brightness-110 sm:flex"
             >
               + Добавить расход
             </button>
@@ -60,8 +63,8 @@ export default async function ExpensesPage(props: PageProps<"/expenses">) {
         />
       </div>
 
-      <div className="flex flex-col gap-3 p-8 pt-0">
-        <div className="w-full rounded-xl border border-[var(--devider)] bg-[var(--surface)]">
+      <div className="flex flex-col gap-3 p-4 pt-4 sm:p-8 sm:pt-0">
+        <div className="w-full overflow-x-auto rounded-xl border border-[var(--devider)] bg-[var(--surface)]">
           <div className={`${GRID} h-12 border-b border-[var(--devider)]`}>
             {COLUMNS.map((col) => (
               <div key={col.label} className={`${col.col} truncate px-2 text-xs font-semibold text-[var(--text-inactive)]`}>
@@ -122,6 +125,20 @@ export default async function ExpensesPage(props: PageProps<"/expenses">) {
 
         {totalRows > 0 && <Pagination page={page} pageSize={pageSize} total={total} />}
       </div>
+
+      <ExpenseModal
+        title="Добавить расход"
+        action={createExpense}
+        trigger={
+          <button
+            type="button"
+            aria-label="Добавить расход"
+            className="fixed right-6 bottom-6 z-40 flex size-14 cursor-pointer items-center justify-center rounded-full bg-[var(--accent-orange)] text-white shadow-lg hover:brightness-110 sm:hidden"
+          >
+            <PlusIcon />
+          </button>
+        }
+      />
     </div>
   );
 }

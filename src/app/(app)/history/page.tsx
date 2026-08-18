@@ -13,7 +13,7 @@ const ACTION_LABELS: Record<string, string> = {
 };
 
 // 24-column grid, matching the style used across Доходы/Расходы tables.
-const GRID = "grid grid-cols-[repeat(24,minmax(0,1fr))] px-6";
+const GRID = "grid grid-cols-[repeat(24,minmax(0,1fr))] px-6 min-w-[1000px]";
 const COLUMNS = [
   { label: "Когда", col: "col-[1/span_4]" },
   { label: "Кто", col: "col-[5/span_3]" },
@@ -31,12 +31,12 @@ export default async function HistoryPage() {
 
   return (
     <div className="flex flex-col">
-      <div className="p-8">
+      <div className="p-4 sm:p-8">
         <h1 className="text-2xl font-extrabold text-[var(--text-primary)]">История</h1>
       </div>
 
-      <div className="flex flex-col gap-3 px-8 pb-8">
-        <div className="w-full rounded-xl border border-[var(--devider)] bg-[var(--surface)]">
+      <div className="flex flex-col gap-3 px-4 pb-4 sm:px-8 sm:pb-8">
+        <div className="w-full overflow-x-auto rounded-xl border border-[var(--devider)] bg-[var(--surface)]">
           <div className={`${GRID} h-12 items-center border-b border-[var(--devider)]`}>
             {COLUMNS.map((col) => (
               <div key={col.label} className={`${col.col} truncate px-2 text-xs font-semibold text-[var(--text-inactive)]`}>

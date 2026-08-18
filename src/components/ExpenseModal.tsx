@@ -36,7 +36,7 @@ export function ExpenseModal({
               <input name="description" required defaultValue={defaults?.description} className={inputClass} />
             </Field>
 
-            <div className="flex gap-4">
+            <div className="flex flex-col gap-4 sm:flex-row">
               <Field label="Дата">
                 <DateInput name="date" defaultValue={defaults?.date ?? new Date().toISOString().slice(0, 10)} />
               </Field>

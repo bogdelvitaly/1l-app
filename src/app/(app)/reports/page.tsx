@@ -33,15 +33,15 @@ export default async function ReportsPage(props: PageProps<"/reports">) {
 
   return (
     <div className="flex flex-col">
-      <div className="flex items-center justify-between gap-4 p-8">
+      <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-8">
         <h1 className="text-2xl font-extrabold text-[var(--text-primary)]">Отчёты</h1>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-col gap-2 overflow-x-auto sm:flex-row sm:items-center sm:gap-4">
           <div className="flex gap-1">
             {years.map((y) => (
               <Link
                 key={y}
                 href={`/reports?year=${y}&quarter=${quarter}`}
-                className={`rounded-md px-3 py-1.5 text-sm font-medium ${
+                className={`rounded-md px-3 py-1.5 text-sm font-medium whitespace-nowrap ${
                   y === year
                     ? "bg-[var(--accent-blue)] text-white"
                     : "text-[var(--text-inactive)] hover:bg-[var(--surface-hover)]"
@@ -56,7 +56,7 @@ export default async function ReportsPage(props: PageProps<"/reports">) {
               <Link
                 key={q}
                 href={`/reports?year=${year}&quarter=${q}`}
-                className={`rounded-md px-3 py-1.5 text-sm font-medium ${
+                className={`rounded-md px-3 py-1.5 text-sm font-medium whitespace-nowrap ${
                   q === quarter
                     ? "bg-[var(--accent-blue)] text-white"
                     : "text-[var(--text-inactive)] hover:bg-[var(--surface-hover)]"
@@ -69,9 +69,9 @@ export default async function ReportsPage(props: PageProps<"/reports">) {
         </div>
       </div>
 
-      <div className="flex flex-col gap-6 px-8 pb-8">
-        <div className="rounded-xl bg-[var(--surface)] p-8">
-          <div className="mb-4 flex items-center justify-between">
+      <div className="flex flex-col gap-6 px-4 pb-4 sm:px-8 sm:pb-8">
+        <div className="rounded-xl bg-[var(--surface)] p-4 sm:p-8">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm text-[var(--text-muted)]">Остаток за квартал</p>
               <div className="mt-2 flex items-center gap-3">
@@ -94,8 +94,8 @@ export default async function ReportsPage(props: PageProps<"/reports">) {
           <StatCard label="Налог за квартал" value={report.quarterTax} />
         </div>
 
-        <div className="w-full rounded-xl border border-[var(--devider)] bg-[var(--surface)]">
-          <div className="flex h-12 items-center border-b border-[var(--devider)] px-6">
+        <div className="w-full overflow-x-auto rounded-xl border border-[var(--devider)] bg-[var(--surface)]">
+          <div className="flex h-12 min-w-[700px] items-center border-b border-[var(--devider)] px-6">
             {["Товар", "Количество", "Сумма брутто", "Сумма нетто", "Себестоимость", "Налог за квартал"].map((h) => (
               <div key={h} className="flex-1 px-2 text-xs font-semibold text-[var(--text-inactive)]">
                 {h}
@@ -105,7 +105,7 @@ export default async function ReportsPage(props: PageProps<"/reports">) {
           {report.productRows.map((row, i) => (
             <div
               key={row.productType}
-              className="flex h-16 items-center px-6"
+              className="flex h-16 min-w-[700px] items-center px-6"
               style={i % 2 === 1 ? { backgroundColor: "rgba(123,160,175,0.05)" } : undefined}
             >
               <div className="flex-1 px-2 text-sm font-medium text-[var(--text-primary)]">

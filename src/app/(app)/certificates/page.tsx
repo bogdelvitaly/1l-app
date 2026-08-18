@@ -11,19 +11,19 @@ export default async function CertificatesPage() {
 
   return (
     <div className="flex flex-col">
-      <div className="flex items-center justify-between gap-4 p-8">
+      <div className="flex items-center justify-between gap-4 p-4 sm:p-8">
         <h1 className="text-2xl font-extrabold text-[var(--text-primary)]">Сертификаты</h1>
       </div>
 
-      <div className="flex flex-col gap-4 px-8 pb-8">
+      <div className="flex flex-col gap-4 px-4 pb-4 sm:px-8 sm:pb-8">
         <div>
           <h2 className="text-xl font-extrabold text-[var(--text-primary)]">Добавить новый сертификат</h2>
           <p className="text-sm text-[var(--text-muted)]">Введите данные для генерации нового сертификата.</p>
         </div>
 
-        <form action={createCertificate} className="flex flex-wrap items-end gap-4 rounded-xl bg-[var(--surface)] p-6">
+        <form action={createCertificate} className="flex flex-col items-stretch gap-4 rounded-xl bg-[var(--surface)] p-6 sm:flex-row sm:flex-wrap sm:items-end">
           <Field label="Дата">
-            <DateInput name="date" defaultValue={new Date().toISOString().slice(0, 10)} className="w-[250px]" />
+            <DateInput name="date" defaultValue={new Date().toISOString().slice(0, 10)} className="sm:w-[250px]" />
           </Field>
           <Field label="Сумма (BYN)">
             <input
@@ -32,7 +32,7 @@ export default async function CertificatesPage() {
               name="amount"
               required
               placeholder="Введите..."
-              className={`${inputClass} w-[250px]`}
+              className={`${inputClass} sm:w-[250px]`}
             />
           </Field>
           <button
@@ -43,8 +43,8 @@ export default async function CertificatesPage() {
           </button>
         </form>
 
-        <div className="rounded-xl border border-[var(--devider)] bg-[var(--surface)]">
-          <div className="flex h-12 items-center justify-between border-b border-[var(--devider)] px-6">
+        <div className="overflow-x-auto rounded-xl border border-[var(--devider)] bg-[var(--surface)]">
+          <div className="flex h-12 min-w-[700px] items-center justify-between border-b border-[var(--devider)] px-6">
             <div className="min-w-[300px] flex-1 px-2 text-xs font-semibold text-[var(--text-muted)]">Номер</div>
             <div className="flex-1 px-2 text-xs font-semibold text-[var(--text-muted)]">Дата</div>
             <div className="flex-1 px-2 text-xs font-semibold text-[var(--text-muted)]">Сумма</div>
@@ -55,7 +55,7 @@ export default async function CertificatesPage() {
           {certificates.map((c, i) => (
             <div
               key={c.id}
-              className="flex h-16 items-center justify-between px-6"
+              className="flex h-16 min-w-[700px] items-center justify-between px-6"
               style={i % 2 === 1 ? { backgroundColor: "rgba(123,160,175,0.05)" } : undefined}
             >
               <div className="min-w-[300px] flex-1 px-2 text-sm font-medium text-[var(--text-primary)]">{c.number}</div>

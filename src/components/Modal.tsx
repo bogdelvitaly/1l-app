@@ -27,11 +27,11 @@ export function Modal({
 
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 sm:p-4"
           onClick={() => setOpen(false)}
         >
           <div
-            className="w-full max-w-[574px] rounded-xl border border-[var(--devider)] bg-[var(--surface)] p-8"
+            className="flex h-full w-full flex-col overflow-y-auto border-[var(--devider)] bg-[var(--surface)] p-6 sm:h-auto sm:max-h-[90vh] sm:max-w-[574px] sm:rounded-xl sm:border sm:p-8"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="mb-8 flex items-start justify-between">

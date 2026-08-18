@@ -5,14 +5,18 @@ import { TypeBadge } from "@/components/TypeBadge";
 import { SearchBox } from "@/components/SearchBox";
 import { Pagination } from "@/components/Pagination";
 import { RowActions, EditTrigger } from "@/components/RowActions";
+import { PlusIcon } from "@/components/icons";
 import { createIncome, updateIncome, deleteIncome } from "./actions";
 
 function fmt(n: number) {
   return n.toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-// 24-column grid, matching the Figma table exactly.
-const GRID = "grid grid-cols-[repeat(24,minmax(0,1fr))] items-center px-6";
+// 24-column grid, matching the Figma table exactly. The min-width keeps every
+// column readable on narrow viewports instead of squishing — the table
+// scrolls horizontally within its container below that width (see the Figma
+// mobile frames, which use the same fixed-width-columns-plus-scroll approach).
+const GRID = "grid grid-cols-[repeat(24,minmax(0,1fr))] items-center px-6 min-w-[1100px]";
 const COLUMNS = [
   { label: "№", col: "col-[1/span_1]" },
   { label: "Дата", col: "col-[2/span_2]" },
@@ -52,8 +56,8 @@ export default async function IncomePage(props: PageProps<"/income">) {
 
   return (
     <div className="flex flex-col">
-      <div className="flex items-center justify-between gap-4 p-8">
-        <div className="flex min-w-0 items-center gap-8">
+      <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-8">
+        <div className="flex flex-col gap-4 sm:min-w-0 sm:flex-row sm:items-center sm:gap-8">
           <h1 className="shrink-0 text-2xl font-extrabold text-[var(--text-primary)]">Доходы</h1>
           <SearchBox />
         </div>
@@ -64,7 +68,7 @@ export default async function IncomePage(props: PageProps<"/income">) {
           trigger={
             <button
               type="button"
-              className="flex h-11 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-[var(--accent-orange)] px-5 text-base font-medium whitespace-nowrap text-white hover:brightness-110"
+              className="hidden h-11 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-[var(--accent-orange)] px-5 text-base font-medium whitespace-nowrap text-white hover:brightness-110 sm:flex"
             >
               + Добавить доход
             </button>
@@ -72,7 +76,7 @@ export default async function IncomePage(props: PageProps<"/income">) {
         />
       </div>
 
-      <div className="px-8">
+      <div className="px-4 sm:px-8">
         <div className="flex h-20 items-center gap-3 rounded-xl border border-[var(--devider)] bg-[var(--surface)] p-5">
           <div className="relative flex size-10 shrink-0 items-center justify-center rounded-full bg-[var(--accent-blue)]/10">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -85,8 +89,8 @@ export default async function IncomePage(props: PageProps<"/income">) {
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 p-8">
-        <div className="w-full rounded-xl border border-[var(--devider)] bg-[var(--surface)]">
+      <div className="flex flex-col gap-3 p-4 sm:p-8">
+        <div className="w-full overflow-x-auto rounded-xl border border-[var(--devider)] bg-[var(--surface)]">
           <div className={`${GRID} h-12 border-b border-[var(--devider)]`}>
             {COLUMNS.map((col) => (
               <div key={col.label} className={`${col.col} truncate px-2 text-xs font-semibold text-[var(--text-inactive)]`}>
@@ -164,6 +168,21 @@ export default async function IncomePage(props: PageProps<"/income">) {
 
         {totalRows > 0 && <Pagination page={page} pageSize={pageSize} total={total} />}
       </div>
+
+      <IncomeModal
+        title="Добавить доход"
+        action={createIncome}
+        productTypes={productTypes}
+        trigger={
+          <button
+            type="button"
+            aria-label="Добавить доход"
+            className="fixed right-6 bottom-6 z-40 flex size-14 cursor-pointer items-center justify-center rounded-full bg-[var(--accent-orange)] text-white shadow-lg hover:brightness-110 sm:hidden"
+          >
+            <PlusIcon />
+          </button>
+        }
+      />
     </div>
   );
 }

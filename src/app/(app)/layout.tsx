@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth, signOut } from "@/lib/auth";
-import { Sidebar } from "@/components/Sidebar";
+import { Sidebar, MobileNav } from "@/components/Sidebar";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -12,8 +12,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[var(--background)]">
+    <div className="flex h-screen flex-col overflow-hidden bg-[var(--background)] md:flex-row">
       <Sidebar logoutAction={logout} />
+      <MobileNav logoutAction={logout} />
       <main className="h-full min-w-0 flex-1 overflow-y-auto">{children}</main>
     </div>
   );

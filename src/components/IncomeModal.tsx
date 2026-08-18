@@ -41,7 +41,7 @@ export function IncomeModal({
               <input name="saleDetails" required defaultValue={defaults?.saleDetails} className={inputClass} />
             </Field>
 
-            <div className="flex gap-4">
+            <div className="flex flex-col gap-4 sm:flex-row">
               <Field label="Дата">
                 <DateInput name="date" defaultValue={defaults?.date ?? new Date().toISOString().slice(0, 10)} />
               </Field>
@@ -59,7 +59,7 @@ export function IncomeModal({
               </Field>
             </div>
 
-            <div className="flex gap-4">
+            <div className="flex flex-col gap-4 sm:flex-row">
               <Field label="Сумма (BYN)">
                 <input
                   type="number"
@@ -89,7 +89,7 @@ export function IncomeModal({
               </Field>
             </div>
 
-            <div className="flex gap-4">
+            <div className="flex flex-col gap-4 sm:flex-row">
               <Field label="Отправка">
                 <input
                   type="number"

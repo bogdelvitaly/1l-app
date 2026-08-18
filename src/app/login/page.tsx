@@ -30,7 +30,7 @@ export default async function LoginPage(props: PageProps<"/login">) {
     <div className="flex flex-1 items-center justify-center bg-[var(--background)] px-4">
       <form
         action={login}
-        className="flex w-full max-w-[420px] flex-col items-center gap-8 rounded-xl border border-[var(--devider)] bg-[var(--surface)] px-10 py-14"
+        className="flex w-full max-w-[420px] flex-col items-center gap-8 rounded-xl border border-[var(--devider)] bg-[var(--surface)] px-6 py-10 sm:px-10 sm:py-14"
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/icons/figma/logo.svg" alt="" width={50} height={58} />
