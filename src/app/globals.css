@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+/* Dark theme is the default. Sidebar always stays dark regardless of theme —
+   its colors are hardcoded in Sidebar.tsx, not driven by these variables. */
+:root {
+  --background: #081d28;
+  --surface: #0c2333;
+  --surface-hover: #153146;
+  --devider: #343b4f;
+  --accent-blue: #519ef5;
+  --accent-orange: #db803f;
+  --text-primary: #ffffff;
+  --text-inactive: #aec4e1;
+  --text-muted: #7087a4;
+  --negative: #f31a1a;
+}
+
+:root[data-theme="light"] {
+  --background: #f3f6f8;
+  --surface: #ffffff;
+  --surface-hover: #eef2f6;
+  --devider: #e8ebf4;
+  --accent-blue: #3082df;
+  --accent-orange: #db803f;
+  --text-primary: #262626;
+  --text-inactive: #7087a4;
+  --text-muted: #7087a4;
+  --negative: #f31a1a;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--text-primary);
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+  background: var(--background);
+  color: var(--text-primary);
+}
+
+/* Native date-input calendar icon is unstyleable (no currentColor support and
+   clashes with the theme), so we hide it and overlay our own SVG in its place
+   (see DateInput in form-fields.tsx) — kept full-size and click-through so the
+   picker still opens from anywhere on the input, same as the native icon did. */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+  cursor: pointer;
+  background: transparent;
+}

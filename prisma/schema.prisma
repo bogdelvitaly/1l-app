@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Local dev uses SQLite (zero setup). For production, switch provider to
+// "postgresql" and set DATABASE_URL to the Neon connection string — no
+// other changes needed, since no field below uses a native enum type
+// (SQLite has none), just plain strings validated in code (see src/lib/types.ts).
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  username     String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+
+  expenses     Expense[]
+  incomes      Income[]
+  certificates Certificate[]
+  changeLogs   ChangeLog[]
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  date        DateTime
+  description String
+  category    String // NALOG | SEBESTOIMOST | ZARPLATA | RAZVITIE | MASTERSKAYA | OTPRAVKA
+  amount      Float
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([date])
+  @@index([category])
+}
+
+model Income {
+  id            String   @id @default(cuid())
+  date          DateTime
+  saleDetails   String
+  amount        Float
+  shipping      Float    @default(0)
+  delivery      Float    @default(0)
+  paymentMethod String // NAL | BEZNAL
+  productType   String // V_K | V_V | V_RGB | VV_RGB | M_30 | M_50 | M_70
+  createdById   String
+  createdBy     User     @relation(fields: [createdById], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([date])
+  @@index([productType])
+}
+
+model Certificate {
+  id          String   @id @default(cuid())
+  sequenceNo  Int      @unique
+  number      String   @unique // "{sequenceNo}-{ddMMyyyy}"
+  amount      Float
+  date        DateTime
+  createdById String
+  createdBy   User     @relation(fields: [createdById], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+// Себестоимость по типу товара = сумма price всех CostComponent этого типа (считается на лету).
+// Типы товара — управляемый пользователем список (можно добавлять/удалять), а не жёсткий enum,
+// поэтому Income.productType хранит просто code как строку без FK (чтобы удаление типа
+// не ломало исторические продажи).
+model ProductType {
+  id         String          @id @default(cuid())
+  code       String          @unique
+  label      String
+  createdAt  DateTime        @default(now())
+  components CostComponent[]
+}
+
+model CostComponent {
+  id            String      @id @default(cuid())
+  productTypeId String
+  productType   ProductType @relation(fields: [productTypeId], references: [id], onDelete: Cascade)
+  name          String
+  price         Float
+  createdAt     DateTime    @default(now())
+}
+
+model ChangeLog {
+  id         String   @id @default(cuid())
+  entityType String // Expense | Income | Certificate
+  entityId   String
+  action     String // create | update | delete
+  diff       String // JSON string
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+}
