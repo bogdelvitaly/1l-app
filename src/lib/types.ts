@@ -33,7 +33,7 @@ export const PAYMENT_METHOD_SHORT_LABELS: Record<PaymentMethod, string> = {
   BEZNAL: "Безнал",
 };
 
-export const INCOME_SOURCES = ["SITE", "INSTAGRAM", "ADS", "WORD_OF_MOUTH", "OTHER"] as const;
+export const INCOME_SOURCES = ["SITE", "INSTAGRAM", "ADS", "WORD_OF_MOUTH", "STORE", "OTHER"] as const;
 export type IncomeSource = (typeof INCOME_SOURCES)[number];
 
 export const INCOME_SOURCE_LABELS: Record<IncomeSource, string> = {
@@ -41,6 +41,7 @@ export const INCOME_SOURCE_LABELS: Record<IncomeSource, string> = {
   INSTAGRAM: "Инстаграм",
   ADS: "Реклама",
   WORD_OF_MOUTH: "Сарафанное радио",
+  STORE: "Магазин",
   OTHER: "Другое",
 };
 

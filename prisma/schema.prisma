@@ -63,7 +63,7 @@ model Income {
   product   Product? @relation(fields: [productId], references: [id])
   buyer     String?
   city      String?
-  source    String? // SITE | INSTAGRAM | ADS | WORD_OF_MOUTH | OTHER
+  source    String? // SITE | INSTAGRAM | ADS | WORD_OF_MOUTH | STORE | OTHER
 
   // Налогом облагаются не все доходы (напр. предоплата, компенсация) — этот флаг
   // исключает запись из выручки, по которой считается фактический налог за месяц.

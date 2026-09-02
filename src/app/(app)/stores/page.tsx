@@ -88,6 +88,7 @@ export default async function StoresPage() {
                           productId: sp.product.id,
                           city: store.location,
                           amount: sp.product.price,
+                          source: "STORE",
                         }}
                         trigger={
                           <button
