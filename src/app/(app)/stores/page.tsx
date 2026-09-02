@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { createStore, deleteStore, addStoreProduct, removeStoreProduct } from "./actions";
-import { createIncome } from "../income/actions";
+import { createStore, deleteStore, addStoreProduct, removeStoreProduct, sellStoreProduct } from "./actions";
 import { Badge } from "@/components/Badge";
 import { ConfirmDeleteForm } from "@/components/ConfirmDeleteForm";
 import { IncomeModal } from "@/components/IncomeModal";
@@ -82,13 +81,14 @@ export default async function StoresPage() {
                       <span className="w-20 shrink-0 text-[var(--text-primary)]">{fmt(sp.product.price)} BYN</span>
                       <IncomeModal
                         title="Добавить доход"
-                        action={createIncome}
+                        action={sellStoreProduct.bind(null, sp.id)}
                         products={productsForModal}
                         defaults={{
                           productId: sp.product.id,
                           city: store.location,
                           amount: sp.product.price,
                           source: "STORE",
+                          saleDetails: `${store.name}, ${store.location}`,
                         }}
                         trigger={
                           <button

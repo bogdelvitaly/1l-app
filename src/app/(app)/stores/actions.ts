@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { storeSchema } from "@/lib/types";
+import { createIncome } from "../income/actions";
 
 export async function createStore(formData: FormData) {
   const session = await auth();
@@ -49,5 +50,17 @@ export async function removeStoreProduct(formData: FormData) {
 
   const id = String(formData.get("id"));
   await prisma.storeProduct.delete({ where: { id } });
+  revalidatePath("/stores");
+}
+
+// "Продано" — creates the Income exactly like the regular form, then takes the
+// item off the store's shelf. If createIncome throws (validation, auth), the
+// StoreProduct is left untouched.
+export async function sellStoreProduct(storeProductId: string, formData: FormData) {
+  const session = await auth();
+  if (!session?.user) throw new Error("Unauthorized");
+
+  await createIncome(formData);
+  await prisma.storeProduct.delete({ where: { id: storeProductId } });
   revalidatePath("/stores");
 }
