@@ -14,13 +14,30 @@ function parseForm(formData: FormData) {
     shipping: formData.get("shipping") || 0,
     delivery: formData.get("delivery") || 0,
     paymentMethod: formData.get("paymentMethod"),
-    productType: formData.get("productType"),
     productId: formData.get("productId") || undefined,
     buyer: formData.get("buyer") || undefined,
     city: formData.get("city") || undefined,
+    source: formData.get("source") || undefined,
     // Unchecked checkboxes are absent from FormData entirely (not "false").
     taxable: formData.has("taxable"),
   });
+}
+
+// productType isn't submitted by the form anymore — it's derived from the
+// selected Product's catalog type. When no Product is selected, an existing
+// income keeps whatever productType it already had (nothing to derive, and
+// this field isn't editable in the form, so an unrelated edit shouldn't blank
+// it out); a brand-new income with no Product simply gets none.
+async function resolveProductType(productId: string | undefined, existingId?: string): Promise<string | null> {
+  if (productId) {
+    const product = await prisma.product.findUnique({ where: { id: productId }, include: { productType: true } });
+    return product?.productType.code ?? null;
+  }
+  if (existingId) {
+    const existing = await prisma.income.findUnique({ where: { id: existingId } });
+    return existing?.productType ?? null;
+  }
+  return null;
 }
 
 export async function createIncome(formData: FormData) {
@@ -28,14 +45,15 @@ export async function createIncome(formData: FormData) {
   if (!session?.user) throw new Error("Unauthorized");
 
   const data = parseForm(formData);
+  const productType = await resolveProductType(data.productId);
   const created = await prisma.income.create({
-    data: { ...data, createdById: session.user.id },
+    data: { ...data, productType, createdById: session.user.id },
   });
   await logChange({
     entityType: "Income",
     entityId: created.id,
     action: "create",
-    diff: data,
+    diff: { ...data, productType },
     userId: session.user.id,
   });
 
@@ -47,12 +65,13 @@ export async function updateIncome(id: string, formData: FormData) {
   if (!session?.user) throw new Error("Unauthorized");
 
   const data = parseForm(formData);
-  await prisma.income.update({ where: { id }, data });
+  const productType = await resolveProductType(data.productId, id);
+  await prisma.income.update({ where: { id }, data: { ...data, productType } });
   await logChange({
     entityType: "Income",
     entityId: id,
     action: "update",
-    diff: data,
+    diff: { ...data, productType },
     userId: session.user.id,
   });
 

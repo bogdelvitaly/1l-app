@@ -69,7 +69,7 @@ export async function GET() {
         shipping: i.shipping,
         delivery: i.delivery,
         paymentMethod: PAYMENT_METHOD_LABELS[i.paymentMethod as keyof typeof PAYMENT_METHOD_LABELS] ?? i.paymentMethod,
-        productType: typeLabel.get(i.productType) ?? i.productType,
+        productType: i.productType ? (typeLabel.get(i.productType) ?? i.productType) : "",
       });
     });
   }

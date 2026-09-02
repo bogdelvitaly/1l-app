@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { PAYMENT_METHOD_SHORT_LABELS } from "@/lib/types";
+import { PAYMENT_METHOD_SHORT_LABELS, INCOME_SOURCE_LABELS } from "@/lib/types";
 import { IncomeModal } from "@/components/IncomeModal";
 import { TypeBadge } from "@/components/TypeBadge";
 import { Badge } from "@/components/Badge";
@@ -13,22 +13,22 @@ function fmt(n: number) {
   return n.toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-// 26-column grid — 24 from the Figma table plus 2 for the new «Товар» column.
-// The min-width keeps every column readable on narrow viewports instead of
-// squishing — the table scrolls horizontally within its container below that
-// width (see the Figma mobile frames, which use the same approach).
-const GRID = "grid grid-cols-[repeat(26,minmax(0,1fr))] items-center px-6 min-w-[1250px]";
+// 32-column grid: №, Товар, Покупатель, Дата, Город, Источник, Детали (wide),
+// Сумма, Нал/безнал, Отправка/Доставка (merged), Тип, Действия.
+const GRID = "grid grid-cols-[repeat(32,minmax(0,1fr))] items-center px-6 min-w-[1500px]";
 const COLUMNS = [
   { label: "№", col: "col-[1/span_1]" },
-  { label: "Дата", col: "col-[2/span_2]" },
-  { label: "Детали продажи", col: "col-[4/span_9] min-w-[300px]" },
-  { label: "Товар", col: "col-[13/span_2]" },
-  { label: "Сумма", col: "col-[15/span_2]" },
-  { label: "Отправка", col: "col-[17/span_2]" },
-  { label: "Доставка", col: "col-[19/span_2]" },
-  { label: "Нал/безнал", col: "col-[21/span_2]" },
-  { label: "Тип", col: "col-[23/span_2]" },
-  { label: "", col: "col-[25/span_2]" },
+  { label: "Товар", col: "col-[2/span_3]" },
+  { label: "Покупатель", col: "col-[5/span_3]" },
+  { label: "Дата", col: "col-[8/span_2]" },
+  { label: "Город", col: "col-[10/span_3]" },
+  { label: "Источник", col: "col-[13/span_3]" },
+  { label: "Детали", col: "col-[16/span_6] min-w-[220px]" },
+  { label: "Сумма", col: "col-[22/span_2]" },
+  { label: "Нал/безнал", col: "col-[24/span_2]" },
+  { label: "Отправка/Доставка", col: "col-[26/span_3]" },
+  { label: "Тип", col: "col-[29/span_2]" },
+  { label: "", col: "col-[31/span_2]" },
 ];
 
 export default async function IncomePage(props: PageProps<"/income">) {
@@ -51,9 +51,9 @@ export default async function IncomePage(props: PageProps<"/income">) {
     prisma.income.aggregate({ _sum: { amount: true } }),
     prisma.expense.aggregate({ _sum: { amount: true } }),
     prisma.productType.findMany({ orderBy: { createdAt: "asc" } }),
-    prisma.product.findMany({ include: { productType: true }, orderBy: { createdAt: "asc" } }),
+    prisma.product.findMany({ orderBy: { createdAt: "asc" } }),
   ]);
-  const productsForModal = products.map((p) => ({ id: p.id, name: p.name, productTypeCode: p.productType.code }));
+  const productsForModal = products.map((p) => ({ id: p.id, name: p.name }));
 
   const obshak = (incomeAgg._sum.amount ?? 0) - (expenseAgg._sum.amount ?? 0);
   const typeLabel = new Map(productTypes.map((pt) => [pt.code, pt.label]));
@@ -69,7 +69,6 @@ export default async function IncomePage(props: PageProps<"/income">) {
         <IncomeModal
           title="Добавить доход"
           action={createIncome}
-          productTypes={productTypes}
           products={productsForModal}
           trigger={
             <button
@@ -114,35 +113,47 @@ export default async function IncomePage(props: PageProps<"/income">) {
               <div className="col-[1/span_1] px-2 text-sm font-medium text-[var(--text-primary)]">
                 {total - ((page - 1) * pageSize + i)}
               </div>
-              <div className="col-[2/span_2] px-2 text-sm font-medium text-[var(--text-primary)]">
+              <div className="col-[2/span_3] px-2">
+                {row.product ? <Badge color={row.product.color} label={row.product.name} /> : "-"}
+              </div>
+              <div className="col-[5/span_3] truncate px-2 text-sm font-medium text-[var(--text-primary)]">
+                {row.buyer || "-"}
+              </div>
+              <div className="col-[8/span_2] px-2 text-sm font-medium text-[var(--text-primary)]">
                 {row.date.toLocaleDateString("ru-RU")}
               </div>
+              <div className="col-[10/span_3] truncate px-2 text-sm font-medium text-[var(--text-primary)]">
+                {row.city || "-"}
+              </div>
+              <div className="col-[13/span_3] truncate px-2 text-sm font-medium text-[var(--text-primary)]">
+                {row.source ? (INCOME_SOURCE_LABELS[row.source as keyof typeof INCOME_SOURCE_LABELS] ?? row.source) : "-"}
+              </div>
               <div
-                className="col-[4/span_9] min-w-[300px] truncate px-2 text-sm font-medium text-[var(--text-primary)]"
+                className="col-[16/span_6] min-w-[220px] truncate px-2 text-sm font-medium text-[var(--text-primary)]"
                 title={row.saleDetails}
               >
                 {row.saleDetails}
               </div>
-              <div className="col-[13/span_2] px-2">
-                {row.product ? <Badge color={row.product.color} label={row.product.name} /> : "-"}
-              </div>
-              <div className="col-[15/span_2] px-2 text-sm font-medium text-[var(--text-primary)]">
+              <div className="col-[22/span_2] px-2 text-sm font-medium text-[var(--text-primary)]">
                 {fmt(row.amount)} BYN
               </div>
-              <div className="col-[17/span_2] px-2 text-sm font-medium text-[var(--text-primary)]">
-                {row.shipping ? fmt(row.shipping) : "-"}
-              </div>
-              <div className="col-[19/span_2] px-2 text-sm font-medium text-[var(--text-primary)]">
-                {row.delivery ? fmt(row.delivery) : "-"}
-              </div>
-              <div className="col-[21/span_2] truncate px-2 text-sm font-medium text-[var(--text-primary)]">
+              <div className="col-[24/span_2] truncate px-2 text-sm font-medium text-[var(--text-primary)]">
                 {PAYMENT_METHOD_SHORT_LABELS[row.paymentMethod as keyof typeof PAYMENT_METHOD_SHORT_LABELS] ??
                   row.paymentMethod}
               </div>
-              <div className="col-[23/span_2] px-2">
-                <TypeBadge code={row.productType} label={typeLabel.get(row.productType) ?? row.productType} />
+              <div className="col-[26/span_3] px-2 text-xs font-medium text-[var(--text-primary)]">
+                {row.shipping > 0 && <div>Отправка {fmt(row.shipping)}</div>}
+                {row.delivery > 0 && <div>Доставка {fmt(row.delivery)}</div>}
+                {row.shipping <= 0 && row.delivery <= 0 && "-"}
               </div>
-              <div className="col-[25/span_2] px-2">
+              <div className="col-[29/span_2] px-2">
+                {row.productType ? (
+                  <TypeBadge code={row.productType} label={typeLabel.get(row.productType) ?? row.productType} />
+                ) : (
+                  "-"
+                )}
+              </div>
+              <div className="col-[31/span_2] px-2">
                 <RowActions
                   id={row.id}
                   deleteAction={deleteIncome}
@@ -150,7 +161,6 @@ export default async function IncomePage(props: PageProps<"/income">) {
                     <IncomeModal
                       title="Изменить доход"
                       action={updateIncome.bind(null, row.id)}
-                      productTypes={productTypes}
                       products={productsForModal}
                       trigger={<EditTrigger />}
                       defaults={{
@@ -160,10 +170,10 @@ export default async function IncomePage(props: PageProps<"/income">) {
                         shipping: row.shipping,
                         delivery: row.delivery,
                         paymentMethod: row.paymentMethod,
-                        productType: row.productType,
                         productId: row.productId ?? undefined,
                         buyer: row.buyer ?? undefined,
                         city: row.city ?? undefined,
+                        source: row.source ?? undefined,
                         taxable: row.taxable,
                       }}
                     />
@@ -186,7 +196,6 @@ export default async function IncomePage(props: PageProps<"/income">) {
       <IncomeModal
         title="Добавить доход"
         action={createIncome}
-        productTypes={productTypes}
         products={productsForModal}
         trigger={
           <button

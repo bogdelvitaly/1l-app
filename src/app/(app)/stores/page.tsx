@@ -10,16 +10,15 @@ function fmt(n: number) {
 }
 
 export default async function StoresPage() {
-  const [stores, products, productTypes] = await Promise.all([
+  const [stores, products] = await Promise.all([
     prisma.store.findMany({
       orderBy: { createdAt: "asc" },
       include: { products: { include: { product: { include: { productType: true } } } } },
     }),
     prisma.product.findMany({ include: { productType: true }, orderBy: { createdAt: "asc" } }),
-    prisma.productType.findMany({ orderBy: { createdAt: "asc" } }),
   ]);
 
-  const productsForModal = products.map((p) => ({ id: p.id, name: p.name, productTypeCode: p.productType.code }));
+  const productsForModal = products.map((p) => ({ id: p.id, name: p.name }));
 
   return (
     <div className="flex flex-col">
@@ -84,7 +83,6 @@ export default async function StoresPage() {
                       <IncomeModal
                         title="Добавить доход"
                         action={createIncome}
-                        productTypes={productTypes}
                         products={productsForModal}
                         defaults={{
                           productId: sp.product.id,

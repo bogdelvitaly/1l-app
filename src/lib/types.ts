@@ -33,6 +33,17 @@ export const PAYMENT_METHOD_SHORT_LABELS: Record<PaymentMethod, string> = {
   BEZNAL: "Безнал",
 };
 
+export const INCOME_SOURCES = ["SITE", "INSTAGRAM", "ADS", "WORD_OF_MOUTH", "OTHER"] as const;
+export type IncomeSource = (typeof INCOME_SOURCES)[number];
+
+export const INCOME_SOURCE_LABELS: Record<IncomeSource, string> = {
+  SITE: "Сайт",
+  INSTAGRAM: "Инстаграм",
+  ADS: "Реклама",
+  WORD_OF_MOUTH: "Сарафанное радио",
+  OTHER: "Другое",
+};
+
 // Типы товара больше не жёсткий enum — управляются пользователем в /settings
 // (таблица ProductType). Список ниже используется только для первоначального
 // заполнения БД (prisma/seed.ts), не для валидации.
@@ -60,12 +71,15 @@ export const incomeSchema = z.object({
   shipping: z.coerce.number().min(0).default(0),
   delivery: z.coerce.number().min(0).default(0),
   paymentMethod: z.enum(PAYMENT_METHODS),
-  productType: z.string().min(1, "Выберите тип товара"),
+  // productType is no longer submitted by the form — it's derived server-side
+  // from the selected Product (see income/actions.ts) and left untouched when
+  // no Product is selected, so it's not part of this input schema at all.
   // Added alongside saleDetails — a specific catalog Product plus who/where it
   // was sold to. All optional so old-style entries (and old rows) keep working.
   productId: z.string().optional(),
   buyer: z.string().optional(),
   city: z.string().optional(),
+  source: z.enum(INCOME_SOURCES).optional(),
   taxable: z.boolean().default(true),
 });
 

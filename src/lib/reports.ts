@@ -51,7 +51,9 @@ async function getPeriodReport(start: Date, end: Date) {
 
   const brutto = incomes.reduce((sum, i) => sum + i.amount, 0);
 
-  const codesSold = Array.from(new Set(incomes.map((i) => i.productType)));
+  // Продажи без выбранного Товара/Типа (старый формат через свободный текст «Детали
+  // продажи») не попадают в разбивку по товарам — у них нет базы для себестоимости.
+  const codesSold = Array.from(new Set(incomes.map((i) => i.productType).filter((code) => code != null)));
 
   const productRows = codesSold.map((code) => {
     const info = typeInfo.get(code);
@@ -116,7 +118,8 @@ export async function getMonthlyTrend(year: number) {
     const brutto = monthIncomes.reduce((sum, inc) => sum + inc.amount, 0);
     const tax = monthlyTax(brutto);
 
-    const cost = Array.from(new Set(monthIncomes.map((inc) => inc.productType))).reduce((sum, code) => {
+    const codes = Array.from(new Set(monthIncomes.map((inc) => inc.productType).filter((code) => code != null)));
+    const cost = codes.reduce((sum, code) => {
       const count = monthIncomes.filter((inc) => inc.productType === code).length;
       return sum + (unitCostByCode.get(code) ?? 0) * count;
     }, 0);

@@ -46,7 +46,9 @@ model Income {
   shipping      Float    @default(0)
   delivery      Float    @default(0)
   paymentMethod String // NAL | BEZNAL
-  productType   String // V_K | V_V | V_RGB | VV_RGB | M_30 | M_50 | M_70
+  // Not submitted from the form anymore — derived server-side from the selected
+  // Product when one is chosen, left untouched otherwise, so it's nullable now.
+  productType   String? // V_K | V_V | V_RGB | VV_RGB | M_30 | M_50 | M_70
   createdById   String
   createdBy     User     @relation(fields: [createdById], references: [id])
   createdAt     DateTime @default(now())
@@ -59,6 +61,7 @@ model Income {
   product   Product? @relation(fields: [productId], references: [id])
   buyer     String?
   city      String?
+  source    String? // SITE | INSTAGRAM | ADS | WORD_OF_MOUTH | OTHER
 
   // Налогом облагаются не все доходы (напр. предоплата, компенсация) — этот флаг
   // исключает запись из выручки, по которой считается фактический налог за месяц.
