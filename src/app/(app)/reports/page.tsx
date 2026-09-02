@@ -87,11 +87,12 @@ export default async function ReportsPage(props: PageProps<"/reports">) {
           <TrendChart data={trend} />
         </div>
 
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
           <StatCard label="Аренда мастерской" value={report.masterskaya} />
           <StatCard label="Развитие по факту" value={report.razvitieFakt} />
           <StatCard label="Пересылка" value={report.peresylka} />
           <StatCard label="Налог за квартал" value={report.quarterTax} />
+          <StatCard label="Ожидаемый налог" value={report.expectedQuarterTax} />
         </div>
 
         <div className="w-full overflow-x-auto rounded-xl border border-[var(--devider)] bg-[var(--surface)]">

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { PAYMENT_METHOD_SHORT_LABELS } from "@/lib/types";
 import { IncomeModal } from "@/components/IncomeModal";
 import { TypeBadge } from "@/components/TypeBadge";
+import { Badge } from "@/components/Badge";
 import { SearchBox } from "@/components/SearchBox";
 import { Pagination } from "@/components/Pagination";
 import { RowActions, EditTrigger } from "@/components/RowActions";
@@ -12,21 +13,22 @@ function fmt(n: number) {
   return n.toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-// 24-column grid, matching the Figma table exactly. The min-width keeps every
-// column readable on narrow viewports instead of squishing — the table
-// scrolls horizontally within its container below that width (see the Figma
-// mobile frames, which use the same fixed-width-columns-plus-scroll approach).
-const GRID = "grid grid-cols-[repeat(24,minmax(0,1fr))] items-center px-6 min-w-[1100px]";
+// 26-column grid — 24 from the Figma table plus 2 for the new «Товар» column.
+// The min-width keeps every column readable on narrow viewports instead of
+// squishing — the table scrolls horizontally within its container below that
+// width (see the Figma mobile frames, which use the same approach).
+const GRID = "grid grid-cols-[repeat(26,minmax(0,1fr))] items-center px-6 min-w-[1250px]";
 const COLUMNS = [
   { label: "№", col: "col-[1/span_1]" },
   { label: "Дата", col: "col-[2/span_2]" },
   { label: "Детали продажи", col: "col-[4/span_9] min-w-[300px]" },
-  { label: "Сумма", col: "col-[13/span_2]" },
-  { label: "Отправка", col: "col-[15/span_2]" },
-  { label: "Доставка", col: "col-[17/span_2]" },
-  { label: "Нал/безнал", col: "col-[19/span_2]" },
-  { label: "Тип", col: "col-[21/span_2]" },
-  { label: "", col: "col-[23/span_2]" },
+  { label: "Товар", col: "col-[13/span_2]" },
+  { label: "Сумма", col: "col-[15/span_2]" },
+  { label: "Отправка", col: "col-[17/span_2]" },
+  { label: "Доставка", col: "col-[19/span_2]" },
+  { label: "Нал/безнал", col: "col-[21/span_2]" },
+  { label: "Тип", col: "col-[23/span_2]" },
+  { label: "", col: "col-[25/span_2]" },
 ];
 
 export default async function IncomePage(props: PageProps<"/income">) {
@@ -37,18 +39,21 @@ export default async function IncomePage(props: PageProps<"/income">) {
 
   const where = q ? { saleDetails: { contains: q } } : {};
 
-  const [incomes, total, incomeAgg, expenseAgg, productTypes] = await Promise.all([
+  const [incomes, total, incomeAgg, expenseAgg, productTypes, products] = await Promise.all([
     prisma.income.findMany({
       where,
       orderBy: { date: "desc" },
       skip: (page - 1) * pageSize,
       take: pageSize,
+      include: { product: true },
     }),
     prisma.income.count({ where }),
     prisma.income.aggregate({ _sum: { amount: true } }),
     prisma.expense.aggregate({ _sum: { amount: true } }),
     prisma.productType.findMany({ orderBy: { createdAt: "asc" } }),
+    prisma.product.findMany({ include: { productType: true }, orderBy: { createdAt: "asc" } }),
   ]);
+  const productsForModal = products.map((p) => ({ id: p.id, name: p.name, productTypeCode: p.productType.code }));
 
   const obshak = (incomeAgg._sum.amount ?? 0) - (expenseAgg._sum.amount ?? 0);
   const typeLabel = new Map(productTypes.map((pt) => [pt.code, pt.label]));
@@ -65,6 +70,7 @@ export default async function IncomePage(props: PageProps<"/income">) {
           title="Добавить доход"
           action={createIncome}
           productTypes={productTypes}
+          products={productsForModal}
           trigger={
             <button
               type="button"
@@ -117,23 +123,26 @@ export default async function IncomePage(props: PageProps<"/income">) {
               >
                 {row.saleDetails}
               </div>
-              <div className="col-[13/span_2] px-2 text-sm font-medium text-[var(--text-primary)]">
-                {fmt(row.amount)} BYN
+              <div className="col-[13/span_2] px-2">
+                {row.product ? <Badge color={row.product.color} label={row.product.name} /> : "-"}
               </div>
               <div className="col-[15/span_2] px-2 text-sm font-medium text-[var(--text-primary)]">
-                {row.shipping ? fmt(row.shipping) : "-"}
+                {fmt(row.amount)} BYN
               </div>
               <div className="col-[17/span_2] px-2 text-sm font-medium text-[var(--text-primary)]">
+                {row.shipping ? fmt(row.shipping) : "-"}
+              </div>
+              <div className="col-[19/span_2] px-2 text-sm font-medium text-[var(--text-primary)]">
                 {row.delivery ? fmt(row.delivery) : "-"}
               </div>
-              <div className="col-[19/span_2] truncate px-2 text-sm font-medium text-[var(--text-primary)]">
+              <div className="col-[21/span_2] truncate px-2 text-sm font-medium text-[var(--text-primary)]">
                 {PAYMENT_METHOD_SHORT_LABELS[row.paymentMethod as keyof typeof PAYMENT_METHOD_SHORT_LABELS] ??
                   row.paymentMethod}
               </div>
-              <div className="col-[21/span_2] px-2">
+              <div className="col-[23/span_2] px-2">
                 <TypeBadge code={row.productType} label={typeLabel.get(row.productType) ?? row.productType} />
               </div>
-              <div className="col-[23/span_2] px-2">
+              <div className="col-[25/span_2] px-2">
                 <RowActions
                   id={row.id}
                   deleteAction={deleteIncome}
@@ -142,6 +151,7 @@ export default async function IncomePage(props: PageProps<"/income">) {
                       title="Изменить доход"
                       action={updateIncome.bind(null, row.id)}
                       productTypes={productTypes}
+                      products={productsForModal}
                       trigger={<EditTrigger />}
                       defaults={{
                         date: row.date.toISOString().slice(0, 10),
@@ -151,6 +161,10 @@ export default async function IncomePage(props: PageProps<"/income">) {
                         delivery: row.delivery,
                         paymentMethod: row.paymentMethod,
                         productType: row.productType,
+                        productId: row.productId ?? undefined,
+                        buyer: row.buyer ?? undefined,
+                        city: row.city ?? undefined,
+                        taxable: row.taxable,
                       }}
                     />
                   }
@@ -173,6 +187,7 @@ export default async function IncomePage(props: PageProps<"/income">) {
         title="Добавить доход"
         action={createIncome}
         productTypes={productTypes}
+        products={productsForModal}
         trigger={
           <button
             type="button"

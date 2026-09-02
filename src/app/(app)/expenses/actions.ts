@@ -27,7 +27,7 @@ export async function createExpense(formData: FormData) {
     entityType: "Expense",
     entityId: created.id,
     action: "create",
-    diff: data,
+    diff: { after: data },
     userId: session.user.id,
   });
 
@@ -39,12 +39,13 @@ export async function updateExpense(id: string, formData: FormData) {
   if (!session?.user) throw new Error("Unauthorized");
 
   const data = parseForm(formData);
+  const before = await prisma.expense.findUnique({ where: { id } });
   await prisma.expense.update({ where: { id }, data });
   await logChange({
     entityType: "Expense",
     entityId: id,
     action: "update",
-    diff: data,
+    diff: { before, after: data },
     userId: session.user.id,
   });
 
@@ -56,12 +57,15 @@ export async function deleteExpense(formData: FormData) {
   if (!session?.user) throw new Error("Unauthorized");
 
   const id = String(formData.get("id"));
+  const before = await prisma.expense.findUnique({ where: { id } });
+  if (!before) return;
+
   await prisma.expense.delete({ where: { id } });
   await logChange({
     entityType: "Expense",
     entityId: id,
     action: "delete",
-    diff: {},
+    diff: { before },
     userId: session.user.id,
   });
 

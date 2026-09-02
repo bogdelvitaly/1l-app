@@ -52,6 +52,19 @@ model Income {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
+  // Added alongside saleDetails, not replacing it — old rows keep saleDetails
+  // as their only detail; new rows can additionally pick a catalog Product
+  // and note the buyer/city as their own fields.
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id])
+  buyer     String?
+  city      String?
+
+  // Налогом облагаются не все доходы (напр. предоплата, компенсация) — этот флаг
+  // исключает запись из выручки, по которой считается фактический налог за месяц.
+  // Существующие записи получают true при миграции, чтобы прошлые отчёты не изменились.
+  taxable Boolean @default(true)
+
   @@index([date])
   @@index([productType])
 }
@@ -77,6 +90,23 @@ model ProductType {
   label      String
   createdAt  DateTime        @default(now())
   components CostComponent[]
+  products   Product[]
+}
+
+// A concrete, sellable item (distinct from ProductType, which is just the
+// broad category like В-К/М-30 used for cost-basis grouping in reports).
+// Каждый Товар принадлежит ровно одному Типу товара.
+model Product {
+  id            String      @id @default(cuid())
+  name          String
+  price         Float // sale price — prefills Income.amount when sold from a Store
+  color         String // hex, e.g. "#519ef5" — badge color in the Доходы table
+  productTypeId String
+  productType   ProductType @relation(fields: [productTypeId], references: [id])
+  createdAt     DateTime    @default(now())
+
+  incomes Income[]
+  stores  StoreProduct[]
 }
 
 model CostComponent {
@@ -86,6 +116,26 @@ model CostComponent {
   name          String
   price         Float
   createdAt     DateTime    @default(now())
+}
+
+model Store {
+  id        String   @id @default(cuid())
+  name      String
+  location  String
+  createdAt DateTime @default(now())
+
+  products StoreProduct[]
+}
+
+// Join table — a Product can sit on the shelf of several Stores at once.
+model StoreProduct {
+  id        String  @id @default(cuid())
+  storeId   String
+  store     Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, productId])
 }
 
 model ChangeLog {

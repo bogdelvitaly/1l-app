@@ -61,6 +61,12 @@ export const incomeSchema = z.object({
   delivery: z.coerce.number().min(0).default(0),
   paymentMethod: z.enum(PAYMENT_METHODS),
   productType: z.string().min(1, "Выберите тип товара"),
+  // Added alongside saleDetails — a specific catalog Product plus who/where it
+  // was sold to. All optional so old-style entries (and old rows) keep working.
+  productId: z.string().optional(),
+  buyer: z.string().optional(),
+  city: z.string().optional(),
+  taxable: z.boolean().default(true),
 });
 
 export const certificateSchema = z.object({
@@ -74,6 +80,21 @@ export const productTypeSchema = z.object({
     .min(1, "Укажите код")
     .regex(/^[A-Za-zА-Яа-яЁёІіЎў0-9_-]+$/, "Только буквы, цифры, _ и -"),
   label: z.string().min(1, "Укажите название"),
+});
+
+export const productSchema = z.object({
+  name: z.string().min(1, "Укажите название"),
+  price: z.coerce.number().min(0, "Цена не может быть отрицательной"),
+  color: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/, "Некорректный цвет")
+    .default("#519ef5"),
+  productTypeId: z.string().min(1, "Выберите тип товара"),
+});
+
+export const storeSchema = z.object({
+  name: z.string().min(1, "Укажите название"),
+  location: z.string().min(1, "Укажите локацию"),
 });
 
 export const costComponentSchema = z.object({

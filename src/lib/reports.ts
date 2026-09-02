@@ -4,9 +4,16 @@ import { monthlyTax, quarterDateRange, quarterMonths, monthDateRange } from "@/l
 export async function getQuarterlyReport(year: number, quarter: 1 | 2 | 3 | 4) {
   const { start, end } = quarterDateRange(year, quarter);
 
-  const [incomes, expensesInRange, productTypes] = await Promise.all([
+  // Налог за месяц фактически платится в СЛЕДУЮЩЕМ месяце (после того как выручка за этот
+  // месяц уже известна) — поэтому фактические расходы категории «Налог», относящиеся к
+  // этому кварталу, датированы на месяц позже самого квартала.
+  const taxWindowStart = new Date(start.getFullYear(), start.getMonth() + 1, 1);
+  const taxWindowEnd = new Date(end.getFullYear(), end.getMonth() + 1, 1);
+
+  const [incomes, expensesInRange, taxExpenses, productTypes] = await Promise.all([
     prisma.income.findMany({ where: { date: { gte: start, lt: end } } }),
     prisma.expense.findMany({ where: { date: { gte: start, lt: end } } }),
+    prisma.expense.findMany({ where: { category: "NALOG", date: { gte: taxWindowStart, lt: taxWindowEnd } } }),
     prisma.productType.findMany({ include: { components: true } }),
   ]);
 
@@ -17,14 +24,19 @@ export async function getQuarterlyReport(year: number, quarter: 1 | 2 | 3 | 4) {
     ]),
   );
 
-  // Налог считается помесячно (порог 450 BYN действует на каждый месяц отдельно), затем суммируется за квартал.
-  let quarterTax = 0;
+  // «Налог за квартал» — факт, сумма реально оплаченных расходов категории «Налог» за этот
+  // квартал (со сдвигом на месяц, см. taxWindowStart/End выше).
+  // «Ожидаемый налог» — расчёт по формуле (10% от выручки, но не меньше 45 BYN/мес) по
+  // доходам, отмеченным как облагаемые налогом (Income.taxable) — прогноз, а не факт.
+  const quarterTax = taxExpenses.reduce((sum, e) => sum + e.amount, 0);
+
+  let expectedQuarterTax = 0;
   for (const month of quarterMonths(quarter)) {
     const { start: mStart, end: mEnd } = monthDateRange(year, month);
-    const monthRevenue = incomes
-      .filter((i) => i.date >= mStart && i.date < mEnd)
+    const monthTaxableRevenue = incomes
+      .filter((i) => i.date >= mStart && i.date < mEnd && i.taxable)
       .reduce((sum, i) => sum + i.amount, 0);
-    quarterTax += monthlyTax(monthRevenue);
+    expectedQuarterTax += monthlyTax(monthTaxableRevenue);
   }
 
   const brutto = incomes.reduce((sum, i) => sum + i.amount, 0);
@@ -60,6 +72,7 @@ export async function getQuarterlyReport(year: number, quarter: 1 | 2 | 3 | 4) {
     quarter,
     brutto,
     quarterTax,
+    expectedQuarterTax,
     totalCost,
     masterskaya,
     razvitieFakt,

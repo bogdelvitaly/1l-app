@@ -31,7 +31,7 @@ export default async function ExpensesPage(props: PageProps<"/expenses">) {
 
   const where = q ? { description: { contains: q } } : {};
 
-  const [expenses, total, totalRows] = await Promise.all([
+  const [expenses, total, totalRows, incomeAgg, expenseAgg] = await Promise.all([
     prisma.expense.findMany({
       where,
       orderBy: { date: "desc" },
@@ -40,11 +40,14 @@ export default async function ExpensesPage(props: PageProps<"/expenses">) {
     }),
     prisma.expense.count({ where }),
     prisma.expense.count(),
+    prisma.income.aggregate({ _sum: { amount: true } }),
+    prisma.expense.aggregate({ _sum: { amount: true } }),
   ]);
+  const obshak = (incomeAgg._sum.amount ?? 0) - (expenseAgg._sum.amount ?? 0);
 
   return (
     <div className="flex flex-col">
-      <div className="flex flex-col gap-4 p-4 pb-0 sm:flex-row sm:items-center sm:justify-between sm:p-8 sm:pb-0">
+      <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-8">
         <div className="flex flex-col gap-4 sm:min-w-0 sm:flex-row sm:items-center sm:gap-8">
           <h1 className="shrink-0 text-2xl font-extrabold text-[var(--text-primary)]">Расходы</h1>
           <SearchBox />
@@ -63,7 +66,20 @@ export default async function ExpensesPage(props: PageProps<"/expenses">) {
         />
       </div>
 
-      <div className="flex flex-col gap-3 p-4 pt-4 sm:p-8 sm:pt-0">
+      <div className="px-4 sm:px-8">
+        <div className="flex h-20 items-center gap-3 rounded-xl border border-[var(--devider)] bg-[var(--surface)] p-5">
+          <div className="relative flex size-10 shrink-0 items-center justify-center rounded-full bg-[var(--accent-blue)]/10">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/icons/figma/wallet-dots-2.svg" alt="" width={16} height={16} />
+          </div>
+          <div>
+            <p className="text-base font-semibold text-[var(--text-primary)]">Сумма общака</p>
+            <p className="text-xs text-[var(--text-muted)]">{fmt(obshak)} BYN</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3 p-4 sm:p-8">
         <div className="w-full overflow-x-auto rounded-xl border border-[var(--devider)] bg-[var(--surface)]">
           <div className={`${GRID} h-12 border-b border-[var(--devider)]`}>
             {COLUMNS.map((col) => (

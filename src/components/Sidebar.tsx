@@ -17,6 +17,7 @@ const NAV = [
   { href: "/expenses", label: "Расходы", icon: "nav-expenses" },
   { href: "/reports", label: "Отчёты", icon: "nav-reports" },
   { href: "/certificates", label: "Сертификаты", icon: "nav-certificates" },
+  { href: "/stores", label: "Магазины", icon: "nav-stores" },
   { href: "/history", label: "История", icon: "nav-history" },
   { href: "/settings", label: "Настройки", icon: "nav-settings" },
 ];

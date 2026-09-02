@@ -3,6 +3,8 @@ import ExcelJS from "exceljs";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { PAYMENT_METHOD_LABELS } from "@/lib/types";
+import { getQuarterlyReport } from "@/lib/reports";
+import { quarterOfMonth } from "@/lib/formulas";
 
 export async function GET() {
   const session = await auth();
@@ -75,6 +77,48 @@ export async function GET() {
   if (years.length === 0) {
     workbook.addWorksheet("Расходы");
     workbook.addWorksheet("Доходы");
+  }
+
+  // Один ряд на каждый квартал, за который есть хоть один доход или расход.
+  const quartersPresent = new Set<string>();
+  for (const i of incomes) quartersPresent.add(`${i.date.getFullYear()}-${quarterOfMonth(i.date.getMonth() + 1)}`);
+  for (const e of expenses) quartersPresent.add(`${e.date.getFullYear()}-${quarterOfMonth(e.date.getMonth() + 1)}`);
+
+  if (quartersPresent.size > 0) {
+    const quarterSheet = workbook.addWorksheet("Отчёты по кварталам");
+    quarterSheet.columns = [
+      { header: "Год", key: "year", width: 10 },
+      { header: "Квартал", key: "quarter", width: 10 },
+      { header: "Брутто", key: "brutto", width: 14 },
+      { header: "Себестоимость", key: "cost", width: 16 },
+      { header: "Аренда мастерской", key: "masterskaya", width: 18 },
+      { header: "Развитие по факту", key: "razvitie", width: 18 },
+      { header: "Пересылка", key: "peresylka", width: 14 },
+      { header: "Налог", key: "tax", width: 14 },
+      { header: "Остаток", key: "ostatok", width: 14 },
+    ];
+
+    const sortedQuarters = Array.from(quartersPresent)
+      .map((key) => {
+        const [year, quarter] = key.split("-").map(Number);
+        return { year, quarter: quarter as 1 | 2 | 3 | 4 };
+      })
+      .sort((a, b) => a.year - b.year || a.quarter - b.quarter);
+
+    for (const { year, quarter } of sortedQuarters) {
+      const report = await getQuarterlyReport(year, quarter);
+      quarterSheet.addRow({
+        year,
+        quarter: `Q${quarter}`,
+        brutto: report.brutto,
+        cost: report.totalCost,
+        masterskaya: report.masterskaya,
+        razvitie: report.razvitieFakt,
+        peresylka: report.peresylka,
+        tax: report.quarterTax,
+        ostatok: report.ostatok,
+      });
+    }
   }
 
   const buffer = await workbook.xlsx.writeBuffer();

@@ -15,6 +15,11 @@ function parseForm(formData: FormData) {
     delivery: formData.get("delivery") || 0,
     paymentMethod: formData.get("paymentMethod"),
     productType: formData.get("productType"),
+    productId: formData.get("productId") || undefined,
+    buyer: formData.get("buyer") || undefined,
+    city: formData.get("city") || undefined,
+    // Unchecked checkboxes are absent from FormData entirely (not "false").
+    taxable: formData.has("taxable"),
   });
 }
 

@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { createCertificate, deleteCertificate } from "./actions";
 import { DateInput, Field, inputClass } from "@/components/form-fields";
+import { ConfirmDeleteForm } from "@/components/ConfirmDeleteForm";
 
 function fmt(n: number) {
   return n.toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -74,17 +75,15 @@ export default async function CertificatesPage() {
                 </a>
               </div>
               <div className="flex flex-1 justify-end px-2">
-                <form action={deleteCertificate}>
-                  <input type="hidden" name="id" value={c.id} />
-                  <button
-                    type="submit"
-                    className="inline-flex cursor-pointer items-center gap-4 text-sm font-medium whitespace-nowrap text-[var(--negative)]"
-                  >
-                    Удалить сертификат
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src="/icons/figma/trash.svg" alt="" width={16} height={16} />
-                  </button>
-                </form>
+                <ConfirmDeleteForm
+                  action={deleteCertificate}
+                  id={c.id}
+                  className="inline-flex cursor-pointer items-center gap-4 text-sm font-medium whitespace-nowrap text-[var(--negative)]"
+                >
+                  Удалить сертификат
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/icons/figma/trash.svg" alt="" width={16} height={16} />
+                </ConfirmDeleteForm>
               </div>
             </div>
           ))}

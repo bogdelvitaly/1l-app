@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { productTypeSchema, costComponentSchema, userSchema } from "@/lib/types";
+import { productTypeSchema, costComponentSchema, userSchema, productSchema } from "@/lib/types";
 import { importLegacyWorkbook } from "@/lib/legacyImport";
 
 const MAX_USERS = 10;
@@ -55,6 +55,30 @@ export async function deleteComponent(formData: FormData) {
   revalidatePath("/settings");
 }
 
+export async function createProduct(formData: FormData) {
+  const session = await auth();
+  if (!session?.user) throw new Error("Unauthorized");
+
+  const data = productSchema.parse({
+    name: formData.get("name"),
+    price: formData.get("price"),
+    color: formData.get("color"),
+    productTypeId: formData.get("productTypeId"),
+  });
+
+  await prisma.product.create({ data });
+  revalidatePath("/settings");
+}
+
+export async function deleteProduct(formData: FormData) {
+  const session = await auth();
+  if (!session?.user) throw new Error("Unauthorized");
+
+  const id = String(formData.get("id"));
+  await prisma.product.delete({ where: { id } });
+  revalidatePath("/settings");
+}
+
 export async function importExcel(formData: FormData) {
   const session = await auth();
   if (!session?.user) throw new Error("Unauthorized");
@@ -78,6 +102,12 @@ export async function importExcel(formData: FormData) {
   } else {
     throw new Error("Выберите файл или укажите ссылку");
   }
+
+  // Файл успешно загружен и распарсен — теперь можно безопасно очистить старые
+  // Доходы/Расходы перед импортом (по решению пользователя: новый файл полностью
+  // заменяет старые данные, а не дополняет их).
+  await prisma.expense.deleteMany({});
+  await prisma.income.deleteMany({});
 
   const result = await importLegacyWorkbook(workbook, session.user.id);
 

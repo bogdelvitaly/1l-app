@@ -1,6 +1,7 @@
 "use client";
 
 import { PenIcon } from "./icons";
+import { ConfirmDeleteForm } from "./ConfirmDeleteForm";
 
 export function EditTrigger() {
   return (
@@ -22,13 +23,10 @@ export function RowActions({
   return (
     <div className="flex items-center gap-4">
       {editModal}
-      <form action={deleteAction}>
-        <input type="hidden" name="id" value={id} />
-        <button type="submit" aria-label="Удалить" className="cursor-pointer">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icons/figma/trash.svg" alt="" width={20} height={20} />
-        </button>
-      </form>
+      <ConfirmDeleteForm action={deleteAction} id={id} ariaLabel="Удалить" className="cursor-pointer">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/icons/figma/trash.svg" alt="" width={20} height={20} />
+      </ConfirmDeleteForm>
     </div>
   );
 }
