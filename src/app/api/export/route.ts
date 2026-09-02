@@ -115,7 +115,7 @@ export async function GET() {
         masterskaya: report.masterskaya,
         razvitie: report.razvitieFakt,
         peresylka: report.peresylka,
-        tax: report.quarterTax,
+        tax: report.tax,
         ostatok: report.ostatok,
       });
     }
