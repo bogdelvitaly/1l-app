@@ -24,20 +24,10 @@ function parseForm(formData: FormData) {
 }
 
 // productType isn't submitted by the form anymore — it's derived from the
-// selected Product's catalog type. When no Product is selected, an existing
-// income keeps whatever productType it already had (nothing to derive, and
-// this field isn't editable in the form, so an unrelated edit shouldn't blank
-// it out); a brand-new income with no Product simply gets none.
-async function resolveProductType(productId: string | undefined, existingId?: string): Promise<string | null> {
-  if (productId) {
-    const product = await prisma.product.findUnique({ where: { id: productId }, include: { productType: true } });
-    return product?.productType.code ?? null;
-  }
-  if (existingId) {
-    const existing = await prisma.income.findUnique({ where: { id: existingId } });
-    return existing?.productType ?? null;
-  }
-  return null;
+// selected Product's catalog type (Товар is required, so productId is always set).
+async function resolveProductType(productId: string): Promise<string | null> {
+  const product = await prisma.product.findUnique({ where: { id: productId }, include: { productType: true } });
+  return product?.productType.code ?? null;
 }
 
 export async function createIncome(formData: FormData) {
@@ -65,7 +55,7 @@ export async function updateIncome(id: string, formData: FormData) {
   if (!session?.user) throw new Error("Unauthorized");
 
   const data = parseForm(formData);
-  const productType = await resolveProductType(data.productId, id);
+  const productType = await resolveProductType(data.productId);
   await prisma.income.update({ where: { id }, data: { ...data, productType } });
   await logChange({
     entityType: "Income",

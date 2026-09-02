@@ -66,20 +66,19 @@ export const expenseSchema = z.object({
 
 export const incomeSchema = z.object({
   date: z.coerce.date(),
-  saleDetails: z.string().min(1, "Укажите детали продажи"),
+  // Free-text supplement to the catalog Товар — no longer required now that
+  // Товар itself is mandatory.
+  saleDetails: z.string().optional(),
   amount: z.coerce.number().positive("Сумма должна быть больше 0"),
   shipping: z.coerce.number().min(0).default(0),
   delivery: z.coerce.number().min(0).default(0),
   paymentMethod: z.enum(PAYMENT_METHODS),
   // productType is no longer submitted by the form — it's derived server-side
-  // from the selected Product (see income/actions.ts) and left untouched when
-  // no Product is selected, so it's not part of this input schema at all.
-  // Added alongside saleDetails — a specific catalog Product plus who/where it
-  // was sold to. All optional so old-style entries (and old rows) keep working.
-  productId: z.string().optional(),
+  // from the selected Product (see income/actions.ts).
+  productId: z.string().min(1, "Выберите товар"),
   buyer: z.string().optional(),
-  city: z.string().optional(),
-  source: z.enum(INCOME_SOURCES).optional(),
+  city: z.string().min(1, "Укажите город"),
+  source: z.enum(INCOME_SOURCES, { message: "Выберите источник" }),
   taxable: z.boolean().default(true),
 });
 

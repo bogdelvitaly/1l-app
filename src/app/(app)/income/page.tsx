@@ -53,7 +53,7 @@ export default async function IncomePage(props: PageProps<"/income">) {
     prisma.productType.findMany({ orderBy: { createdAt: "asc" } }),
     prisma.product.findMany({ orderBy: { createdAt: "asc" } }),
   ]);
-  const productsForModal = products.map((p) => ({ id: p.id, name: p.name }));
+  const productsForModal = products.map((p) => ({ id: p.id, name: p.name, price: p.price }));
 
   const obshak = (incomeAgg._sum.amount ?? 0) - (expenseAgg._sum.amount ?? 0);
   const typeLabel = new Map(productTypes.map((pt) => [pt.code, pt.label]));
@@ -130,9 +130,9 @@ export default async function IncomePage(props: PageProps<"/income">) {
               </div>
               <div
                 className="col-[16/span_6] min-w-[220px] truncate px-2 text-sm font-medium text-[var(--text-primary)]"
-                title={row.saleDetails}
+                title={row.saleDetails ?? undefined}
               >
-                {row.saleDetails}
+                {row.saleDetails || "-"}
               </div>
               <div className="col-[22/span_2] px-2 text-sm font-medium text-[var(--text-primary)]">
                 {fmt(row.amount)} BYN
@@ -165,7 +165,7 @@ export default async function IncomePage(props: PageProps<"/income">) {
                       trigger={<EditTrigger />}
                       defaults={{
                         date: row.date.toISOString().slice(0, 10),
-                        saleDetails: row.saleDetails,
+                        saleDetails: row.saleDetails ?? undefined,
                         amount: row.amount,
                         shipping: row.shipping,
                         delivery: row.delivery,

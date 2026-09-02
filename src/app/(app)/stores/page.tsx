@@ -18,7 +18,7 @@ export default async function StoresPage() {
     prisma.product.findMany({ include: { productType: true }, orderBy: { createdAt: "asc" } }),
   ]);
 
-  const productsForModal = products.map((p) => ({ id: p.id, name: p.name }));
+  const productsForModal = products.map((p) => ({ id: p.id, name: p.name, price: p.price }));
 
   return (
     <div className="flex flex-col">

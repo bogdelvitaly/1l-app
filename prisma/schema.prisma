@@ -41,7 +41,9 @@ model Expense {
 model Income {
   id            String   @id @default(cuid())
   date          DateTime
-  saleDetails   String
+  // No longer required — Товар is required instead now, saleDetails is a
+  // free-text supplement.
+  saleDetails   String?
   amount        Float
   shipping      Float    @default(0)
   delivery      Float    @default(0)

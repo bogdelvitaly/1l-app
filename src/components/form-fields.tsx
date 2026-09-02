@@ -1,9 +1,20 @@
 import { CalendarIcon } from "./icons";
 
-export function Field({ label, children }: { label: string; children: React.ReactNode }) {
+export function Field({
+  label,
+  required,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  children: React.ReactNode;
+}) {
   return (
     <label className="flex flex-1 flex-col gap-2 text-xs text-[var(--text-inactive)]">
-      {label}
+      <span>
+        {label}
+        {required && <span className="text-[var(--negative)]"> *</span>}
+      </span>
       {children}
     </label>
   );
