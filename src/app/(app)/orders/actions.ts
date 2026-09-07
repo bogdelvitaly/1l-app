@@ -15,6 +15,18 @@ export async function moveCardAction(cardId: string, listId: string) {
   revalidatePath("/orders");
 }
 
+// Called immediately when a card is dragged out of Done in-app, for instant feedback —
+// reconcileDoneOrders (src/lib/orderSync.ts) would catch this on the next /orders load
+// regardless, including for cards moved directly in Trello.
+export async function removeIncomeForCardAction(cardId: string) {
+  const session = await auth();
+  if (!session?.user) throw new Error("Unauthorized");
+
+  await prisma.income.deleteMany({ where: { trelloCardId: cardId } });
+  revalidatePath("/income");
+  revalidatePath("/orders");
+}
+
 async function buildOrderCardFromForm(formData: FormData) {
   const productId = String(formData.get("productId") || "");
   const buyer = String(formData.get("buyer") || "") || undefined;

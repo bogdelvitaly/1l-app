@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { moveCardAction, updateCardAction, updateOrderAction } from "@/app/(app)/orders/actions";
+import { moveCardAction, updateCardAction, updateOrderAction, removeIncomeForCardAction } from "@/app/(app)/orders/actions";
 import { createIncome } from "@/app/(app)/income/actions";
 import { incomeDefaultsFromCard, orderDefaultsFromCard, isOrderCard } from "@/lib/trelloParse";
 import { IncomeModal } from "./IncomeModal";
@@ -14,23 +14,38 @@ const PAGE_SIZE = 30;
 
 type Product = { id: string; name: string; price: number };
 
+function isDone(lists: TrelloList[], listId: string | undefined) {
+  if (!listId) return false;
+  return lists.find((l) => l.id === listId)?.name.trim().toLowerCase() === "done";
+}
+
 export function OrdersBoard({
   lists,
   cardsByList,
   products,
+  pendingReviewCards,
 }: {
   lists: TrelloList[];
   cardsByList: Record<string, TrelloCard[]>;
   products: Product[];
+  pendingReviewCards: TrelloCard[];
 }) {
   const [cards, setCards] = useState(cardsByList);
   const [visibleCounts, setVisibleCounts] = useState<Record<string, number>>(() =>
     Object.fromEntries(lists.map((l) => [l.id, PAGE_SIZE])),
   );
   const [draggingId, setDraggingId] = useState<string | null>(null);
-  // A card just dropped onto Done — auto-opens the Добавить доход form for it below,
-  // pre-filled from whatever the card's title/description let us read.
-  const [autoIncomeCard, setAutoIncomeCard] = useState<TrelloCard | null>(null);
+  // A card just dropped onto Done (here or, found out about on this page load,
+  // directly in Trello) — auto-opens Добавить доход for it, one at a time. Closing
+  // one pulls the next off the queue instead of reacting to state changes, so
+  // there's no render-triggers-a-render effect involved.
+  const [autoIncomeCard, setAutoIncomeCard] = useState<TrelloCard | null>(pendingReviewCards[0] ?? null);
+  const [reviewQueue, setReviewQueue] = useState(pendingReviewCards.slice(1));
+
+  function closeAutoIncome() {
+    setAutoIncomeCard(reviewQueue[0] ?? null);
+    setReviewQueue((queue) => queue.slice(1));
+  }
 
   function handleDrop(targetListId: string) {
     if (!draggingId) return;
@@ -43,8 +58,6 @@ export function OrdersBoard({
     if (!original) return;
 
     const isRealMove = original.idList !== targetListId;
-    const targetList = lists.find((l) => l.id === targetListId);
-    const isDoneList = targetList?.name.trim().toLowerCase() === "done";
     const movedCard = { ...original, idList: targetListId };
 
     setCards((prev) => {
@@ -56,8 +69,15 @@ export function OrdersBoard({
       return next;
     });
 
-    if (isRealMove && isDoneList) {
-      setAutoIncomeCard(movedCard);
+    if (isRealMove) {
+      if (isDone(lists, targetListId)) {
+        setAutoIncomeCard(movedCard);
+      } else if (isDone(lists, original.idList)) {
+        // Left Done for somewhere else — the income recorded when it arrived no
+        // longer applies. reconcileDoneOrders would also catch this on next load,
+        // this just makes it happen immediately.
+        removeIncomeForCardAction(cardId).catch(() => {});
+      }
     }
 
     moveCardAction(cardId, targetListId).catch(() => {
@@ -119,8 +139,9 @@ export function OrdersBoard({
         action={createIncome}
         products={products}
         defaults={autoIncomeCard ? incomeDefaultsFromCard(autoIncomeCard, products) : undefined}
+        trelloCardId={autoIncomeCard?.id}
         open={autoIncomeCard !== null}
-        onOpenChange={(v) => !v && setAutoIncomeCard(null)}
+        onOpenChange={(v) => !v && closeAutoIncome()}
       />
     </>
   );
@@ -201,6 +222,7 @@ function OrderCard({
         action={createIncome}
         products={products}
         defaults={incomeDefaults}
+        trelloCardId={card.id}
         trigger={
           <button
             type="button"

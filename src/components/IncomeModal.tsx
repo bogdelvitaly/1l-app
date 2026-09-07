@@ -27,6 +27,7 @@ export function IncomeModal({
   action,
   defaults,
   products,
+  trelloCardId,
   open,
   onOpenChange,
 }: {
@@ -35,6 +36,9 @@ export function IncomeModal({
   action: (formData: FormData) => void;
   defaults?: IncomeDefaults;
   products: Product[];
+  // Set when this form was opened from a Заказы card — see OrdersBoard — so
+  // createIncome can link the new row back to it.
+  trelloCardId?: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }) {
@@ -46,7 +50,15 @@ export function IncomeModal({
           close();
         }
 
-        return <IncomeForm handleSubmit={handleSubmit} defaults={defaults} products={products} title={title} />;
+        return (
+          <IncomeForm
+            handleSubmit={handleSubmit}
+            defaults={defaults}
+            products={products}
+            title={title}
+            trelloCardId={trelloCardId}
+          />
+        );
       }}
     </Modal>
   );
@@ -57,11 +69,13 @@ function IncomeForm({
   defaults,
   products,
   title,
+  trelloCardId,
 }: {
   handleSubmit: (formData: FormData) => void;
   defaults?: IncomeDefaults;
   products: Product[];
   title: string;
+  trelloCardId?: string;
 }) {
   const amountRef = useRef<HTMLInputElement | null>(null);
 
@@ -76,6 +90,7 @@ function IncomeForm({
 
   return (
     <form action={handleSubmit} className="flex flex-col gap-6">
+      {trelloCardId && <input type="hidden" name="trelloCardId" value={trelloCardId} />}
       <div className="flex flex-col gap-4 sm:flex-row">
         <Field label="Товар" required>
           <select

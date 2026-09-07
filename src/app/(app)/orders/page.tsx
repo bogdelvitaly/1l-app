@@ -1,4 +1,5 @@
 import { getBoardData } from "@/lib/trello";
+import { reconcileDoneOrders } from "@/lib/orderSync";
 import { prisma } from "@/lib/prisma";
 import { OrdersBoard } from "@/components/OrdersBoard";
 import { OrderModal } from "@/components/OrderModal";
@@ -10,6 +11,9 @@ export default async function OrdersPage() {
     prisma.product.findMany({ orderBy: { createdAt: "asc" } }),
   ]);
   const productsForModal = products.map((p) => ({ id: p.id, name: p.name, price: p.price }));
+  // Removes incomes for cards no longer in Done (moved here or directly in Trello),
+  // and reports cards that are in Done but need an income created still.
+  const { pendingReview } = await reconcileDoneOrders(lists, cardsByList);
 
   return (
     <div className="flex flex-col">
@@ -30,7 +34,12 @@ export default async function OrdersPage() {
           }
         />
       </div>
-      <OrdersBoard lists={lists} cardsByList={cardsByList} products={productsForModal} />
+      <OrdersBoard
+        lists={lists}
+        cardsByList={cardsByList}
+        products={productsForModal}
+        pendingReviewCards={pendingReview}
+      />
     </div>
   );
 }

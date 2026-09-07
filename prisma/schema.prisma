@@ -70,6 +70,11 @@ model Income {
   // Существующие записи получают true при миграции, чтобы прошлые отчёты не изменились.
   taxable Boolean @default(true)
 
+  // Set only when this income was created from a Заказы card dropped onto Done —
+  // lets /orders reconcile Done membership (in Trello or in-app) back to this row:
+  // moved out of Done → row deleted, see reconcileDoneOrders in src/lib/orderSync.ts.
+  trelloCardId String? @unique
+
   @@index([date])
   @@index([productType])
 }

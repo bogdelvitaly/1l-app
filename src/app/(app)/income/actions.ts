@@ -36,8 +36,11 @@ export async function createIncome(formData: FormData) {
 
   const data = parseForm(formData);
   const productType = await resolveProductType(data.productId);
+  // Only set when this form was opened from a Заказы card (see OrdersBoard) — links
+  // the income back to that card so /orders can remove it if the card leaves Done.
+  const trelloCardId = String(formData.get("trelloCardId") || "") || undefined;
   const created = await prisma.income.create({
-    data: { ...data, productType, createdById: session.user.id },
+    data: { ...data, productType, trelloCardId, createdById: session.user.id },
   });
   await logChange({
     entityType: "Income",
@@ -48,6 +51,7 @@ export async function createIncome(formData: FormData) {
   });
 
   revalidatePath("/income");
+  if (trelloCardId) revalidatePath("/orders");
 }
 
 export async function updateIncome(id: string, formData: FormData) {
