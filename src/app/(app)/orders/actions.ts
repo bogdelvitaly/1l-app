@@ -2,12 +2,73 @@
 
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
-import { moveTrelloCard } from "@/lib/trello";
+import { prisma } from "@/lib/prisma";
+import { moveTrelloCard, createTrelloCard, updateTrelloCard, getIntakeListId } from "@/lib/trello";
+import { buildOrderCardText } from "@/lib/trelloParse";
+import { INCOME_SOURCES, PAYMENT_METHODS, type IncomeSource, type PaymentMethod } from "@/lib/types";
 
 export async function moveCardAction(cardId: string, listId: string) {
   const session = await auth();
   if (!session?.user) throw new Error("Unauthorized");
 
   await moveTrelloCard(cardId, listId);
+  revalidatePath("/orders");
+}
+
+export async function createOrderAction(formData: FormData) {
+  const session = await auth();
+  if (!session?.user) throw new Error("Unauthorized");
+
+  const productId = String(formData.get("productId") || "");
+  const buyer = String(formData.get("buyer") || "") || undefined;
+  const saleDetails = String(formData.get("saleDetails") || "") || undefined;
+  const city = String(formData.get("city") || "") || undefined;
+  const due = String(formData.get("due") || "") || null;
+  const taxable = formData.has("taxable");
+
+  const sourceRaw = String(formData.get("source") || "");
+  const source = (INCOME_SOURCES as readonly string[]).includes(sourceRaw) ? (sourceRaw as IncomeSource) : undefined;
+
+  const paymentRaw = String(formData.get("paymentMethod") || "");
+  const paymentMethod = (PAYMENT_METHODS as readonly string[]).includes(paymentRaw)
+    ? (paymentRaw as PaymentMethod)
+    : undefined;
+
+  const amountRaw = formData.get("amount");
+  const amount = amountRaw ? Number(amountRaw) : undefined;
+  const shipping = Number(formData.get("shipping") || 0) || undefined;
+  const delivery = Number(formData.get("delivery") || 0) || undefined;
+
+  const product = productId ? await prisma.product.findUnique({ where: { id: productId } }) : null;
+
+  const { name, desc } = buildOrderCardText({
+    productName: product?.name,
+    buyer,
+    source,
+    city,
+    amount,
+    paymentMethod,
+    shipping,
+    delivery,
+    taxable,
+    saleDetails,
+  });
+
+  const idList = await getIntakeListId();
+  await createTrelloCard({ idList, name, desc, due });
+
+  revalidatePath("/orders");
+}
+
+export async function updateCardAction(cardId: string, formData: FormData) {
+  const session = await auth();
+  if (!session?.user) throw new Error("Unauthorized");
+
+  const name = String(formData.get("name") || "").trim();
+  if (!name) throw new Error("Название не может быть пустым");
+  const desc = String(formData.get("desc") || "");
+  const due = String(formData.get("due") || "") || null;
+
+  await updateTrelloCard(cardId, { name, desc, due });
   revalidatePath("/orders");
 }

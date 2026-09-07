@@ -67,3 +67,43 @@ export async function moveTrelloCard(cardId: string, idList: string) {
   });
   if (!res.ok) throw new Error(`Trello move error: ${res.status}`);
 }
+
+// New orders always land in the board's first list ("To Do" on this board) —
+// found by name so it keeps working if lists ever get reordered.
+export async function getIntakeListId(): Promise<string> {
+  const { lists } = await getBoardData();
+  const todo = lists.find((l) => l.name.trim().toLowerCase() === "to do");
+  const target = todo ?? lists[0];
+  if (!target) throw new Error("На доске нет ни одного списка");
+  return target.id;
+}
+
+export async function createTrelloCard(params: { idList: string; name: string; desc: string; due?: string | null }) {
+  const { key, token } = trelloAuth();
+  const url = new URL(`${TRELLO_BASE}/cards`);
+  url.searchParams.set("key", key);
+  url.searchParams.set("token", token);
+  url.searchParams.set("idList", params.idList);
+  url.searchParams.set("name", params.name);
+  url.searchParams.set("desc", params.desc);
+  if (params.due) url.searchParams.set("due", params.due);
+  const res = await fetch(url.toString(), { method: "POST" });
+  if (!res.ok) throw new Error(`Trello create error: ${res.status}`);
+  return (await res.json()) as TrelloCard;
+}
+
+export async function updateTrelloCard(
+  cardId: string,
+  params: { name?: string; desc?: string; due?: string | null },
+) {
+  const { key, token } = trelloAuth();
+  const url = new URL(`${TRELLO_BASE}/cards/${cardId}`);
+  url.searchParams.set("key", key);
+  url.searchParams.set("token", token);
+  if (params.name !== undefined) url.searchParams.set("name", params.name);
+  if (params.desc !== undefined) url.searchParams.set("desc", params.desc);
+  if (params.due !== undefined) url.searchParams.set("due", params.due ?? "");
+  const res = await fetch(url.toString(), { method: "PUT" });
+  if (!res.ok) throw new Error(`Trello update error: ${res.status}`);
+  return (await res.json()) as TrelloCard;
+}

@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { moveCardAction } from "@/app/(app)/orders/actions";
+import { moveCardAction, updateCardAction } from "@/app/(app)/orders/actions";
 import { createIncome } from "@/app/(app)/income/actions";
 import { incomeDefaultsFromCard } from "@/lib/trelloParse";
 import { IncomeModal } from "./IncomeModal";
+import { EditCardModal } from "./EditCardModal";
+import { PenIcon } from "./icons";
 import type { TrelloList, TrelloCard } from "@/lib/trello";
 
 const PAGE_SIZE = 30;
@@ -43,10 +45,8 @@ export function OrdersBoard({
           return true;
         });
       }
-      if (moved && moved.idList !== targetListId) {
+      if (moved) {
         next[targetListId] = [{ ...moved, idList: targetListId }, ...(next[targetListId] ?? [])];
-      } else if (moved) {
-        next[targetListId] = [moved, ...(next[targetListId] ?? [])];
       }
       return next;
     });
@@ -67,31 +67,33 @@ export function OrdersBoard({
         return (
           <div
             key={list.id}
-            className="flex w-72 shrink-0 flex-col gap-3 rounded-xl bg-[var(--surface)] p-4"
+            className="flex max-h-[70vh] w-72 shrink-0 flex-col gap-3 rounded-xl bg-[var(--surface)] p-4"
             onDragOver={(e) => e.preventDefault()}
             onDrop={() => handleDrop(list.id)}
           >
-            <div className="flex items-center justify-between px-1">
+            <div className="flex shrink-0 items-center justify-between px-1">
               <h3 className="text-sm font-semibold text-[var(--text-primary)]">{list.name}</h3>
               <span className="text-xs text-[var(--text-inactive)]">{listCards.length}</span>
             </div>
 
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 overflow-y-auto">
               {visibleCards.map((card) => (
                 <OrderCard key={card.id} card={card} products={products} onDragStart={() => setDraggingId(card.id)} />
               ))}
               {listCards.length === 0 && <p className="px-1 text-xs text-[var(--text-inactive)]">Пусто</p>}
-            </div>
 
-            {visibleCount < listCards.length && (
-              <button
-                type="button"
-                onClick={() => setVisibleCounts((prev) => ({ ...prev, [list.id]: (prev[list.id] ?? PAGE_SIZE) + PAGE_SIZE }))}
-                className="cursor-pointer px-1 text-left text-xs font-medium text-[var(--accent-blue)] hover:underline"
-              >
-                Показать ещё ({listCards.length - visibleCount})
-              </button>
-            )}
+              {visibleCount < listCards.length && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setVisibleCounts((prev) => ({ ...prev, [list.id]: (prev[list.id] ?? PAGE_SIZE) + PAGE_SIZE }))
+                  }
+                  className="cursor-pointer px-1 text-left text-xs font-medium text-[var(--accent-blue)] hover:underline"
+                >
+                  Показать ещё ({listCards.length - visibleCount})
+                </button>
+              )}
+            </div>
           </div>
         );
       })}
@@ -108,7 +110,7 @@ function OrderCard({
   products: Product[];
   onDragStart: () => void;
 }) {
-  const defaults = incomeDefaultsFromCard(card);
+  const defaults = incomeDefaultsFromCard(card, products);
 
   return (
     <div
@@ -116,14 +118,29 @@ function OrderCard({
       onDragStart={onDragStart}
       className="flex cursor-grab flex-col gap-1 rounded-lg border border-[var(--devider)] bg-[var(--surface-hover)] p-3 active:cursor-grabbing"
     >
-      <a
-        href={card.shortUrl}
-        target="_blank"
-        rel="noreferrer"
-        className="text-sm font-medium text-[var(--text-primary)] hover:underline"
-      >
-        {card.name}
-      </a>
+      <div className="flex items-start justify-between gap-2">
+        <a
+          href={card.shortUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="text-sm font-medium text-[var(--text-primary)] hover:underline"
+        >
+          {card.name}
+        </a>
+        <EditCardModal
+          card={card}
+          action={updateCardAction.bind(null, card.id)}
+          trigger={
+            <button
+              type="button"
+              aria-label="Изменить карточку"
+              className="shrink-0 cursor-pointer text-[var(--text-inactive)] hover:text-[var(--text-primary)]"
+            >
+              <PenIcon />
+            </button>
+          }
+        />
+      </div>
       {card.due && (
         <p className={`text-xs ${!card.dueComplete && new Date(card.due) < new Date() ? "text-[var(--negative)]" : "text-[var(--text-inactive)]"}`}>
           до {new Date(card.due).toLocaleDateString("ru-RU")}
