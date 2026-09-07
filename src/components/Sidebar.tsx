@@ -13,6 +13,7 @@ const SIDEBAR_ACCENT_BLUE = "#519ef5";
 const SIDEBAR_TEXT_INACTIVE = "#aec4e1";
 
 const NAV = [
+  { href: "/orders", label: "Заказы", icon: "nav-orders" },
   { href: "/income", label: "Доходы", icon: "nav-income" },
   { href: "/expenses", label: "Расходы", icon: "nav-expenses" },
   { href: "/reports", label: "Отчёты", icon: "nav-reports" },
