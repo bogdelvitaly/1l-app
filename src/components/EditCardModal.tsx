@@ -1,7 +1,7 @@
 "use client";
 
 import { Modal } from "./Modal";
-import { Field, inputClass } from "./form-fields";
+import { Field, inputClass, DateInput } from "./form-fields";
 import type { TrelloCard } from "@/lib/trello";
 
 export function EditCardModal({
@@ -37,7 +37,7 @@ export function EditCardModal({
             </Field>
 
             <Field label="Срок выполнения">
-              <input type="date" name="due" defaultValue={card.due?.slice(0, 10) ?? ""} className={inputClass} />
+              <DateInput name="due" defaultValue={card.due?.slice(0, 10) ?? ""} required={false} />
             </Field>
 
             <button

@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import { PAYMENT_METHODS, PAYMENT_METHOD_LABELS, INCOME_SOURCES, INCOME_SOURCE_LABELS } from "@/lib/types";
 import { Modal } from "./Modal";
-import { Field, inputClass } from "./form-fields";
+import { Field, inputClass, DateInput } from "./form-fields";
 
 type Product = { id: string; name: string; price: number };
 
@@ -56,7 +56,7 @@ function OrderForm({ handleSubmit, products }: { handleSubmit: (formData: FormDa
           </select>
         </Field>
         <Field label="Срок выполнения">
-          <input type="date" name="due" className={inputClass} />
+          <DateInput name="due" required={false} />
         </Field>
       </div>
 

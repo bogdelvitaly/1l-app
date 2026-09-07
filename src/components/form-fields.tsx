@@ -30,10 +30,12 @@ export const inputClass =
 export function DateInput({
   name,
   defaultValue,
+  required = true,
   className,
 }: {
   name: string;
   defaultValue?: string;
+  required?: boolean;
   className?: string;
 }) {
   return (
@@ -41,7 +43,7 @@ export function DateInput({
       <input
         type="date"
         name={name}
-        required
+        required={required}
         defaultValue={defaultValue}
         className={`${inputClass} pr-10 ${className ?? ""}`}
       />
