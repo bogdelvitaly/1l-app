@@ -17,7 +17,6 @@ type OrderDefaults = {
   paymentMethod?: string;
   shipping?: number;
   delivery?: number;
-  taxable?: boolean;
   due?: string;
 };
 
@@ -184,16 +183,6 @@ function OrderForm({
           />
         </Field>
       </div>
-
-      <label className="flex items-center gap-2 text-sm font-medium text-[var(--text-primary)]">
-        <input
-          type="checkbox"
-          name="taxable"
-          defaultChecked={defaults?.taxable ?? true}
-          className="size-4 cursor-pointer accent-[var(--accent-orange)]"
-        />
-        Облагается налогом
-      </label>
 
       <button
         type="submit"

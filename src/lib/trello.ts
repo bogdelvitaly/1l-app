@@ -60,6 +60,19 @@ export async function getBoardData(): Promise<{ lists: TrelloList[]; cardsByList
   return { lists, cardsByList };
 }
 
+// Used by updateOrderAction to read back a card's current title before rebuilding
+// it from the edit form, so the order number embedded at create time (see
+// createOrderAction/extractOrderNumber) survives edits unchanged.
+export async function getTrelloCardName(cardId: string): Promise<string> {
+  const { key, token } = trelloAuth();
+  const res = await fetch(`${TRELLO_BASE}/cards/${cardId}?key=${key}&token=${token}&fields=name`, {
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`Trello card fetch error: ${res.status}`);
+  const data = (await res.json()) as { name: string };
+  return data.name;
+}
+
 export async function moveTrelloCard(cardId: string, idList: string) {
   const { key, token } = trelloAuth();
   const res = await fetch(`${TRELLO_BASE}/cards/${cardId}?key=${key}&token=${token}&idList=${idList}`, {

@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { moveTrelloCard, createTrelloCard, updateTrelloCard, getIntakeListId } from "@/lib/trello";
-import { buildOrderCardText } from "@/lib/trelloParse";
+import { moveTrelloCard, createTrelloCard, updateTrelloCard, getIntakeListId, getTrelloCardName } from "@/lib/trello";
+import { buildOrderCardText, extractOrderNumber } from "@/lib/trelloParse";
 import { createIncomeFromCard } from "@/lib/orderSync";
 import { INCOME_SOURCES, PAYMENT_METHODS, type IncomeSource, type PaymentMethod } from "@/lib/types";
 
@@ -42,13 +42,30 @@ export async function removeIncomeForCardAction(cardId: string) {
   revalidatePath("/orders");
 }
 
-async function buildOrderCardFromForm(formData: FormData) {
+// Behind the "MMYY/NNN" order number on every card created via "Добавить заказ" —
+// not exposed on the form, just embedded in the title (see buildOrderCardText).
+// The Postgres upsert below is a single atomic statement, so concurrent creates
+// in the same month still each get a distinct counter value.
+async function nextOrderNumber(date = new Date()): Promise<string> {
+  const monthKey = `${String(date.getMonth() + 1).padStart(2, "0")}${String(date.getFullYear()).slice(-2)}`;
+  const seq = await prisma.orderSequence.upsert({
+    where: { monthKey },
+    update: { counter: { increment: 1 } },
+    create: { monthKey, counter: 1 },
+  });
+  return `${monthKey}/${String(seq.counter).padStart(3, "0")}`;
+}
+
+async function buildOrderCardFromForm(formData: FormData, orderNumber: string | undefined) {
   const productId = String(formData.get("productId") || "");
   const buyer = String(formData.get("buyer") || "") || undefined;
   const saleDetails = String(formData.get("saleDetails") || "") || undefined;
   const city = String(formData.get("city") || "") || undefined;
   const due = String(formData.get("due") || "") || null;
-  const taxable = formData.has("taxable");
+  // Not exposed on the "Добавить заказ" form anymore — orders are always taxable
+  // by default. Доходы's own checkbox (still editable there) is what actually
+  // feeds the tax report once the order reaches Done.
+  const taxable = true;
 
   const sourceRaw = String(formData.get("source") || "");
   const source = (INCOME_SOURCES as readonly string[]).includes(sourceRaw) ? (sourceRaw as IncomeSource) : undefined;
@@ -66,6 +83,7 @@ async function buildOrderCardFromForm(formData: FormData) {
   const product = productId ? await prisma.product.findUnique({ where: { id: productId } }) : null;
 
   const { name, desc } = buildOrderCardText({
+    orderNumber,
     productName: product?.name,
     buyer,
     source,
@@ -85,7 +103,8 @@ export async function createOrderAction(formData: FormData) {
   const session = await auth();
   if (!session?.user) throw new Error("Unauthorized");
 
-  const { name, desc, due } = await buildOrderCardFromForm(formData);
+  const orderNumber = await nextOrderNumber();
+  const { name, desc, due } = await buildOrderCardFromForm(formData, orderNumber);
   const idList = await getIntakeListId();
   await createTrelloCard({ idList, name, desc, due });
 
@@ -93,12 +112,15 @@ export async function createOrderAction(formData: FormData) {
 }
 
 // Only used for cards created via "Добавить заказ" (see isOrderCard in trelloParse) —
-// re-derives the card's title/desc from the structured form, same as create.
+// re-derives the card's title/desc from the structured form, same as create. Reads
+// the card's current title first so its order number (not on the form) survives.
 export async function updateOrderAction(cardId: string, formData: FormData) {
   const session = await auth();
   if (!session?.user) throw new Error("Unauthorized");
 
-  const { name, desc, due } = await buildOrderCardFromForm(formData);
+  const currentName = await getTrelloCardName(cardId);
+  const orderNumber = extractOrderNumber(currentName);
+  const { name, desc, due } = await buildOrderCardFromForm(formData, orderNumber);
   await updateTrelloCard(cardId, { name, desc, due });
 
   revalidatePath("/orders");

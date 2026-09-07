@@ -147,9 +147,17 @@ export function orderDefaultsFromCard(
   };
 }
 
+// Reads back the "MMYY/NNN" order number createOrderAction embeds at the start of
+// a card's title (see buildOrderCardText below) — used by updateOrderAction so
+// editing a card never changes or drops its number.
+export function extractOrderNumber(title: string): string | undefined {
+  return title.match(/^(\d{4}\/\d{3})(?:\.|$)/)?.[1];
+}
+
 // The inverse of parseStructuredDesc — used by "Добавить заказ"/"Изменить заказ" to turn
 // the form into a card title + a labeled desc the parsers above can read back losslessly.
 export function buildOrderCardText(input: {
+  orderNumber?: string;
   productName?: string;
   buyer?: string;
   source?: IncomeSource;
@@ -162,6 +170,7 @@ export function buildOrderCardText(input: {
   saleDetails?: string;
 }): { name: string; desc: string } {
   const titleParts = [
+    input.orderNumber,
     input.productName,
     input.buyer,
     input.city,
