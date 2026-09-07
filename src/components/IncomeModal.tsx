@@ -27,15 +27,19 @@ export function IncomeModal({
   action,
   defaults,
   products,
+  open,
+  onOpenChange,
 }: {
-  trigger: React.ReactNode;
+  trigger?: React.ReactNode;
   title: string;
   action: (formData: FormData) => void;
   defaults?: IncomeDefaults;
   products: Product[];
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
   return (
-    <Modal trigger={trigger} title={title}>
+    <Modal trigger={trigger} title={title} open={open} onOpenChange={onOpenChange}>
       {(close) => {
         async function handleSubmit(formData: FormData) {
           await action(formData);

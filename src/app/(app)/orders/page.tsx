@@ -1,7 +1,7 @@
 import { getBoardData } from "@/lib/trello";
 import { prisma } from "@/lib/prisma";
 import { OrdersBoard } from "@/components/OrdersBoard";
-import { AddOrderModal } from "@/components/AddOrderModal";
+import { OrderModal } from "@/components/OrderModal";
 import { createOrderAction } from "./actions";
 
 export default async function OrdersPage() {
@@ -15,7 +15,9 @@ export default async function OrdersPage() {
     <div className="flex flex-col">
       <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between sm:p-8">
         <h1 className="text-2xl font-extrabold text-[var(--text-primary)]">Заказы</h1>
-        <AddOrderModal
+        <OrderModal
+          title="Добавить заказ"
+          submitLabel="Добавить заказ"
           action={createOrderAction}
           products={productsForModal}
           trigger={

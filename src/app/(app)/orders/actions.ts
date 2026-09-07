@@ -15,10 +15,7 @@ export async function moveCardAction(cardId: string, listId: string) {
   revalidatePath("/orders");
 }
 
-export async function createOrderAction(formData: FormData) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Unauthorized");
-
+async function buildOrderCardFromForm(formData: FormData) {
   const productId = String(formData.get("productId") || "");
   const buyer = String(formData.get("buyer") || "") || undefined;
   const saleDetails = String(formData.get("saleDetails") || "") || undefined;
@@ -54,8 +51,28 @@ export async function createOrderAction(formData: FormData) {
     saleDetails,
   });
 
+  return { name, desc, due };
+}
+
+export async function createOrderAction(formData: FormData) {
+  const session = await auth();
+  if (!session?.user) throw new Error("Unauthorized");
+
+  const { name, desc, due } = await buildOrderCardFromForm(formData);
   const idList = await getIntakeListId();
   await createTrelloCard({ idList, name, desc, due });
+
+  revalidatePath("/orders");
+}
+
+// Only used for cards created via "Добавить заказ" (see isOrderCard in trelloParse) —
+// re-derives the card's title/desc from the structured form, same as create.
+export async function updateOrderAction(cardId: string, formData: FormData) {
+  const session = await auth();
+  if (!session?.user) throw new Error("Unauthorized");
+
+  const { name, desc, due } = await buildOrderCardFromForm(formData);
+  await updateTrelloCard(cardId, { name, desc, due });
 
   revalidatePath("/orders");
 }
