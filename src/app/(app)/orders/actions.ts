@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { moveTrelloCard, createTrelloCard, updateTrelloCard, getIntakeListId } from "@/lib/trello";
 import { buildOrderCardText } from "@/lib/trelloParse";
+import { createIncomeFromCard } from "@/lib/orderSync";
 import { INCOME_SOURCES, PAYMENT_METHODS, type IncomeSource, type PaymentMethod } from "@/lib/types";
 
 export async function moveCardAction(cardId: string, listId: string) {
@@ -12,6 +13,20 @@ export async function moveCardAction(cardId: string, listId: string) {
   if (!session?.user) throw new Error("Unauthorized");
 
   await moveTrelloCard(cardId, listId);
+  revalidatePath("/orders");
+}
+
+// Called immediately when a card is dragged into Done in-app, so the Доходы row
+// appears right away instead of waiting for the next /orders load's reconciliation
+// (see reconcileDoneOrders in src/lib/orderSync.ts, which still catches cards moved
+// directly in Trello).
+export async function addIncomeForCardAction(card: { id: string; name: string; desc: string }) {
+  const session = await auth();
+  if (!session?.user) throw new Error("Unauthorized");
+
+  const products = await prisma.product.findMany();
+  await createIncomeFromCard(card, products, session.user.id);
+  revalidatePath("/income");
   revalidatePath("/orders");
 }
 

@@ -25,7 +25,8 @@ function parseForm(formData: FormData) {
 
 // productType isn't submitted by the form anymore — it's derived from the
 // selected Product's catalog type (Товар is required, so productId is always set).
-async function resolveProductType(productId: string): Promise<string | null> {
+// Exported for reuse by orderSync's auto-created income rows (see src/lib/orderSync.ts).
+export async function resolveProductType(productId: string): Promise<string | null> {
   const product = await prisma.product.findUnique({ where: { id: productId }, include: { productType: true } });
   return product?.productType.code ?? null;
 }

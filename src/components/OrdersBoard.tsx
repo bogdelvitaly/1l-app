@@ -1,7 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { moveCardAction, updateCardAction, updateOrderAction, removeIncomeForCardAction } from "@/app/(app)/orders/actions";
+import {
+  moveCardAction,
+  updateCardAction,
+  updateOrderAction,
+  addIncomeForCardAction,
+  removeIncomeForCardAction,
+} from "@/app/(app)/orders/actions";
 import { createIncome } from "@/app/(app)/income/actions";
 import { incomeDefaultsFromCard, orderDefaultsFromCard, isOrderCard } from "@/lib/trelloParse";
 import { IncomeModal } from "./IncomeModal";
@@ -23,29 +29,16 @@ export function OrdersBoard({
   lists,
   cardsByList,
   products,
-  pendingReviewCards,
 }: {
   lists: TrelloList[];
   cardsByList: Record<string, TrelloCard[]>;
   products: Product[];
-  pendingReviewCards: TrelloCard[];
 }) {
   const [cards, setCards] = useState(cardsByList);
   const [visibleCounts, setVisibleCounts] = useState<Record<string, number>>(() =>
     Object.fromEntries(lists.map((l) => [l.id, PAGE_SIZE])),
   );
   const [draggingId, setDraggingId] = useState<string | null>(null);
-  // A card just dropped onto Done (here or, found out about on this page load,
-  // directly in Trello) — auto-opens Добавить доход for it, one at a time. Closing
-  // one pulls the next off the queue instead of reacting to state changes, so
-  // there's no render-triggers-a-render effect involved.
-  const [autoIncomeCard, setAutoIncomeCard] = useState<TrelloCard | null>(pendingReviewCards[0] ?? null);
-  const [reviewQueue, setReviewQueue] = useState(pendingReviewCards.slice(1));
-
-  function closeAutoIncome() {
-    setAutoIncomeCard(reviewQueue[0] ?? null);
-    setReviewQueue((queue) => queue.slice(1));
-  }
 
   function handleDrop(targetListId: string) {
     if (!draggingId) return;
@@ -71,7 +64,10 @@ export function OrdersBoard({
 
     if (isRealMove) {
       if (isDone(lists, targetListId)) {
-        setAutoIncomeCard(movedCard);
+        // Fills Доходы automatically from the card's own text — no review step, see
+        // addIncomeForCardAction. reconcileDoneOrders would also catch this on the
+        // next load, this just makes it happen immediately.
+        addIncomeForCardAction(movedCard).catch(() => {});
       } else if (isDone(lists, original.idList)) {
         // Left Done for somewhere else — the income recorded when it arrived no
         // longer applies. reconcileDoneOrders would also catch this on next load,
@@ -87,63 +83,51 @@ export function OrdersBoard({
   }
 
   return (
-    <>
-      <div className="flex gap-4 overflow-x-auto px-4 pb-4 sm:px-8 sm:pb-8">
-        {lists.map((list) => {
-          const listCards = cards[list.id] ?? [];
-          const visibleCount = visibleCounts[list.id] ?? PAGE_SIZE;
-          const visibleCards = listCards.slice(0, visibleCount);
+    <div className="flex gap-4 overflow-x-auto px-4 pb-4 sm:px-8 sm:pb-8">
+      {lists.map((list) => {
+        const listCards = cards[list.id] ?? [];
+        const visibleCount = visibleCounts[list.id] ?? PAGE_SIZE;
+        const visibleCards = listCards.slice(0, visibleCount);
 
-          return (
-            <div
-              key={list.id}
-              className="flex max-h-[70vh] w-72 shrink-0 flex-col gap-3 rounded-xl bg-[var(--surface)] p-4"
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={() => handleDrop(list.id)}
-            >
-              <div className="flex shrink-0 items-center justify-between px-1">
-                <h3 className="text-sm font-semibold text-[var(--text-primary)]">{list.name}</h3>
-                <span className="text-xs text-[var(--text-inactive)]">{listCards.length}</span>
-              </div>
-
-              <div className="flex flex-col gap-2 overflow-y-auto">
-                {visibleCards.map((card) => (
-                  <OrderCard
-                    key={card.id}
-                    card={card}
-                    products={products}
-                    onDragStart={() => setDraggingId(card.id)}
-                  />
-                ))}
-                {listCards.length === 0 && <p className="px-1 text-xs text-[var(--text-inactive)]">Пусто</p>}
-
-                {visibleCount < listCards.length && (
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setVisibleCounts((prev) => ({ ...prev, [list.id]: (prev[list.id] ?? PAGE_SIZE) + PAGE_SIZE }))
-                    }
-                    className="cursor-pointer px-1 text-left text-xs font-medium text-[var(--accent-blue)] hover:underline"
-                  >
-                    Показать ещё ({listCards.length - visibleCount})
-                  </button>
-                )}
-              </div>
+        return (
+          <div
+            key={list.id}
+            className="flex max-h-[70vh] w-72 shrink-0 flex-col gap-3 rounded-xl bg-[var(--surface)] p-4"
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={() => handleDrop(list.id)}
+          >
+            <div className="flex shrink-0 items-center justify-between px-1">
+              <h3 className="text-sm font-semibold text-[var(--text-primary)]">{list.name}</h3>
+              <span className="text-xs text-[var(--text-inactive)]">{listCards.length}</span>
             </div>
-          );
-        })}
-      </div>
 
-      <IncomeModal
-        title="Добавить доход"
-        action={createIncome}
-        products={products}
-        defaults={autoIncomeCard ? incomeDefaultsFromCard(autoIncomeCard, products) : undefined}
-        trelloCardId={autoIncomeCard?.id}
-        open={autoIncomeCard !== null}
-        onOpenChange={(v) => !v && closeAutoIncome()}
-      />
-    </>
+            <div className="flex flex-col gap-2 overflow-y-auto">
+              {visibleCards.map((card) => (
+                <OrderCard
+                  key={card.id}
+                  card={card}
+                  products={products}
+                  onDragStart={() => setDraggingId(card.id)}
+                />
+              ))}
+              {listCards.length === 0 && <p className="px-1 text-xs text-[var(--text-inactive)]">Пусто</p>}
+
+              {visibleCount < listCards.length && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setVisibleCounts((prev) => ({ ...prev, [list.id]: (prev[list.id] ?? PAGE_SIZE) + PAGE_SIZE }))
+                  }
+                  className="cursor-pointer px-1 text-left text-xs font-medium text-[var(--accent-blue)] hover:underline"
+                >
+                  Показать ещё ({listCards.length - visibleCount})
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
