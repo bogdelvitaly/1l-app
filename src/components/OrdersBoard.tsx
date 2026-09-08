@@ -8,9 +8,7 @@ import {
   addIncomeForCardAction,
   removeIncomeForCardAction,
 } from "@/app/(app)/orders/actions";
-import { createIncome } from "@/app/(app)/income/actions";
-import { incomeDefaultsFromCard, orderDefaultsFromCard, isOrderCard } from "@/lib/trelloParse";
-import { IncomeModal } from "./IncomeModal";
+import { orderDefaultsFromCard, isOrderCard } from "@/lib/trelloParse";
 import { EditCardModal } from "./EditCardModal";
 import { OrderModal } from "./OrderModal";
 import { PenIcon } from "./icons";
@@ -140,7 +138,6 @@ function OrderCard({
   products: Product[];
   onDragStart: () => void;
 }) {
-  const incomeDefaults = incomeDefaultsFromCard(card, products);
   const structured = isOrderCard(card.desc);
 
   return (
@@ -201,21 +198,6 @@ function OrderCard({
           {card.desc}
         </p>
       )}
-      <IncomeModal
-        title="Добавить доход"
-        action={createIncome}
-        products={products}
-        defaults={incomeDefaults}
-        trelloCardId={card.id}
-        trigger={
-          <button
-            type="button"
-            className="mt-1 w-fit cursor-pointer text-xs font-medium text-[var(--accent-orange)] hover:underline"
-          >
-            Добавить доход
-          </button>
-        }
-      />
     </div>
   );
 }
