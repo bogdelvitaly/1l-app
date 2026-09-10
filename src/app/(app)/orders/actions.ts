@@ -4,8 +4,8 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { moveTrelloCard, createTrelloCard, updateTrelloCard, getIntakeListId, getTrelloCardName } from "@/lib/trello";
-import { buildOrderCardText, extractOrderNumber } from "@/lib/trelloParse";
-import { createIncomeFromCard } from "@/lib/orderSync";
+import { buildOrderCardText, extractOrderNumber, incomeDefaultsFromCard } from "@/lib/trelloParse";
+import { resolveProductType } from "@/app/(app)/income/actions";
 import { INCOME_SOURCES, PAYMENT_METHODS, type IncomeSource, type PaymentMethod } from "@/lib/types";
 
 export async function moveCardAction(cardId: string, listId: string) {
@@ -16,33 +16,51 @@ export async function moveCardAction(cardId: string, listId: string) {
   revalidatePath("/orders");
 }
 
-// Called immediately when a card is dragged into Done in-app, so the Доходы row
-// appears right away instead of waiting for the next /orders load's reconciliation
-// (see reconcileDoneOrders in src/lib/orderSync.ts, which still catches cards moved
-// directly in Trello).
-export async function addIncomeForCardAction(card: { id: string; name: string; desc: string }) {
+// Behind the "Добавить доход" button on a card — a deliberate, one-at-a-time action,
+// so unlike the old Done-triggered auto-create this only ever touches the one card
+// clicked. Товар/Покупатель/Город/Источник are still inferred from the card's own
+// text (see incomeDefaultsFromCard); only Дата/Сумма/Нал-безнал come from the form.
+export async function quickAddIncomeAction(
+  card: { id: string; name: string; desc: string },
+  formData: FormData,
+) {
   const session = await auth();
   if (!session?.user) throw new Error("Unauthorized");
 
   const products = await prisma.product.findMany();
-  await createIncomeFromCard(card, products, session.user.id);
+  const defaults = incomeDefaultsFromCard(card, products);
+  const productType = defaults.productId ? await resolveProductType(defaults.productId) : null;
+
+  const dateRaw = String(formData.get("date") || "");
+  const date = dateRaw ? new Date(dateRaw) : new Date();
+  const amount = Number(formData.get("amount") || 0);
+  const paymentMethod = String(formData.get("paymentMethod") || "");
+
+  const income = await prisma.income.create({
+    data: {
+      date,
+      saleDetails: defaults.saleDetails,
+      amount,
+      shipping: defaults.shipping ?? 0,
+      delivery: defaults.delivery ?? 0,
+      paymentMethod,
+      productType,
+      productId: defaults.productId,
+      buyer: defaults.buyer,
+      city: defaults.city,
+      source: defaults.source,
+      taxable: defaults.taxable ?? true,
+      trelloCardId: card.id,
+      createdById: session.user.id,
+    },
+  });
+
   revalidatePath("/income");
   revalidatePath("/orders");
+  return { incomeId: income.id };
 }
 
-// Called immediately when a card is dragged out of Done in-app, for instant feedback —
-// reconcileDoneOrders (src/lib/orderSync.ts) would catch this on the next /orders load
-// regardless, including for cards moved directly in Trello.
-export async function removeIncomeForCardAction(cardId: string) {
-  const session = await auth();
-  if (!session?.user) throw new Error("Unauthorized");
-
-  await prisma.income.deleteMany({ where: { trelloCardId: cardId } });
-  revalidatePath("/income");
-  revalidatePath("/orders");
-}
-
-// Behind the "MMYY/NNN" order number on every card created via "Добавить заказ" —
+// Behind the "MMYY/N" order number on every card created via "Добавить заказ" —
 // not exposed on the form, just embedded in the title (see buildOrderCardText).
 // The Postgres upsert below is a single atomic statement, so concurrent creates
 // in the same month still each get a distinct counter value.
@@ -53,7 +71,7 @@ async function nextOrderNumber(date = new Date()): Promise<string> {
     update: { counter: { increment: 1 } },
     create: { monthKey, counter: 1 },
   });
-  return `${monthKey}/${String(seq.counter).padStart(3, "0")}`;
+  return `${monthKey}/${seq.counter}`;
 }
 
 async function buildOrderCardFromForm(formData: FormData, orderNumber: string | undefined) {

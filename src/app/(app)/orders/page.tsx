@@ -1,19 +1,19 @@
 import { getBoardData } from "@/lib/trello";
-import { reconcileDoneOrders } from "@/lib/orderSync";
 import { prisma } from "@/lib/prisma";
 import { OrdersBoard } from "@/components/OrdersBoard";
 import { OrderModal } from "@/components/OrderModal";
 import { createOrderAction } from "./actions";
 
 export default async function OrdersPage() {
-  const [{ lists, cardsByList }, products] = await Promise.all([
+  const [{ lists, cardsByList }, products, linkedIncomes] = await Promise.all([
     getBoardData(),
     prisma.product.findMany({ orderBy: { createdAt: "asc" } }),
+    // Which cards already have a "Добавить доход" row — see quickAddIncomeAction —
+    // so their card shows "Доход добавлен" instead of the button.
+    prisma.income.findMany({ where: { trelloCardId: { not: null } }, select: { id: true, trelloCardId: true } }),
   ]);
   const productsForModal = products.map((p) => ({ id: p.id, name: p.name, price: p.price }));
-  // Removes incomes for cards no longer in Done, and auto-creates incomes for cards
-  // moved to Done directly in Trello (in-app moves already handle both immediately).
-  await reconcileDoneOrders(lists, cardsByList);
+  const incomeByCardId = Object.fromEntries(linkedIncomes.map((i) => [i.trelloCardId as string, i.id]));
 
   return (
     <div className="flex flex-col">
@@ -34,7 +34,12 @@ export default async function OrdersPage() {
           }
         />
       </div>
-      <OrdersBoard lists={lists} cardsByList={cardsByList} products={productsForModal} />
+      <OrdersBoard
+        lists={lists}
+        cardsByList={cardsByList}
+        products={productsForModal}
+        incomeByCardId={incomeByCardId}
+      />
     </div>
   );
 }

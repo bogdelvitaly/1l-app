@@ -1,42 +1,39 @@
 "use client";
 
 import { useState } from "react";
-import {
-  moveCardAction,
-  updateCardAction,
-  updateOrderAction,
-  addIncomeForCardAction,
-  removeIncomeForCardAction,
-} from "@/app/(app)/orders/actions";
+import Link from "next/link";
+import { moveCardAction, updateCardAction, updateOrderAction, quickAddIncomeAction } from "@/app/(app)/orders/actions";
 import { orderDefaultsFromCard, isOrderCard } from "@/lib/trelloParse";
 import { EditCardModal } from "./EditCardModal";
 import { OrderModal } from "./OrderModal";
-import { PenIcon } from "./icons";
+import { QuickIncomeModal } from "./QuickIncomeModal";
+import { PenIcon, CheckIcon } from "./icons";
 import type { TrelloList, TrelloCard } from "@/lib/trello";
 
 const PAGE_SIZE = 30;
 
 type Product = { id: string; name: string; price: number };
 
-function isDone(lists: TrelloList[], listId: string | undefined) {
-  if (!listId) return false;
-  return lists.find((l) => l.id === listId)?.name.trim().toLowerCase() === "done";
-}
-
 export function OrdersBoard({
   lists,
   cardsByList,
   products,
+  incomeByCardId,
 }: {
   lists: TrelloList[];
   cardsByList: Record<string, TrelloCard[]>;
   products: Product[];
+  incomeByCardId: Record<string, string>;
 }) {
   const [cards, setCards] = useState(cardsByList);
   const [visibleCounts, setVisibleCounts] = useState<Record<string, number>>(() =>
     Object.fromEntries(lists.map((l) => [l.id, PAGE_SIZE])),
   );
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  // Seeded from the server, then updated in place the moment a quick-add succeeds
+  // (see onAdded below) — otherwise the button wouldn't turn into "Доход добавлен"
+  // until the next full page load.
+  const [incomeLinks, setIncomeLinks] = useState(incomeByCardId);
 
   function handleDrop(targetListId: string) {
     if (!draggingId) return;
@@ -48,7 +45,6 @@ export function OrdersBoard({
       .find((c) => c.id === cardId);
     if (!original) return;
 
-    const isRealMove = original.idList !== targetListId;
     const movedCard = { ...original, idList: targetListId };
 
     setCards((prev) => {
@@ -59,20 +55,6 @@ export function OrdersBoard({
       next[targetListId] = [movedCard, ...(next[targetListId] ?? [])];
       return next;
     });
-
-    if (isRealMove) {
-      if (isDone(lists, targetListId)) {
-        // Fills Доходы automatically from the card's own text — no review step, see
-        // addIncomeForCardAction. reconcileDoneOrders would also catch this on the
-        // next load, this just makes it happen immediately.
-        addIncomeForCardAction(movedCard).catch(() => {});
-      } else if (isDone(lists, original.idList)) {
-        // Left Done for somewhere else — the income recorded when it arrived no
-        // longer applies. reconcileDoneOrders would also catch this on next load,
-        // this just makes it happen immediately.
-        removeIncomeForCardAction(cardId).catch(() => {});
-      }
-    }
 
     moveCardAction(cardId, targetListId).catch(() => {
       // Best-effort optimistic update — a failed write just means the next tab
@@ -105,6 +87,8 @@ export function OrdersBoard({
                   key={card.id}
                   card={card}
                   products={products}
+                  incomeId={incomeLinks[card.id]}
+                  onIncomeAdded={(incomeId) => setIncomeLinks((prev) => ({ ...prev, [card.id]: incomeId }))}
                   onDragStart={() => setDraggingId(card.id)}
                 />
               ))}
@@ -132,10 +116,14 @@ export function OrdersBoard({
 function OrderCard({
   card,
   products,
+  incomeId,
+  onIncomeAdded,
   onDragStart,
 }: {
   card: TrelloCard;
   products: Product[];
+  incomeId: string | undefined;
+  onIncomeAdded: (incomeId: string) => void;
   onDragStart: () => void;
 }) {
   const structured = isOrderCard(card.desc);
@@ -197,6 +185,27 @@ function OrderCard({
         <p className="truncate text-xs text-[var(--text-muted)]" title={card.desc}>
           {card.desc}
         </p>
+      )}
+      {incomeId ? (
+        <Link
+          href={`/income?open=${incomeId}`}
+          className="mt-1 flex w-fit items-center gap-1 text-xs font-medium text-[var(--positive)]"
+        >
+          <CheckIcon /> Доход добавлен
+        </Link>
+      ) : (
+        <QuickIncomeModal
+          action={quickAddIncomeAction.bind(null, { id: card.id, name: card.name, desc: card.desc })}
+          onAdded={onIncomeAdded}
+          trigger={
+            <button
+              type="button"
+              className="mt-1 w-fit cursor-pointer text-xs font-medium text-[var(--accent-orange)] hover:underline"
+            >
+              Добавить доход
+            </button>
+          }
+        />
       )}
     </div>
   );

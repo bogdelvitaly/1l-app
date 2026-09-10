@@ -147,11 +147,11 @@ export function orderDefaultsFromCard(
   };
 }
 
-// Reads back the "MMYY/NNN" order number createOrderAction embeds at the start of
+// Reads back the "MMYY/N" order number createOrderAction embeds at the start of
 // a card's title (see buildOrderCardText below) — used by updateOrderAction so
-// editing a card never changes or drops its number.
+// editing a card never changes or drops its number. Counter is unpadded (1-999).
 export function extractOrderNumber(title: string): string | undefined {
-  return title.match(/^(\d{4}\/\d{3})(?:\.|$)/)?.[1];
+  return title.match(/^(\d{4}\/\d{1,3})(?:\.|$)/)?.[1];
 }
 
 // The inverse of parseStructuredDesc — used by "Добавить заказ"/"Изменить заказ" to turn

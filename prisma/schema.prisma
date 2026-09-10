@@ -149,7 +149,7 @@ model StoreProduct {
 }
 
 // Per-month running counter behind the order number Trello cards get on create
-// (see createOrderAction) — formatted "MMYY/NNN", counter resets at the start of
+// (see createOrderAction) — formatted "MMYY/N" (unpadded, 1-999), counter resets at the start of
 // each month since monthKey itself changes. Never shown in the "Добавить заказ"
 // form; only appears in the resulting card's title.
 model OrderSequence {

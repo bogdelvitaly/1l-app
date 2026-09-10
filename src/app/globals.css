@@ -13,6 +13,7 @@
   --text-inactive: #aec4e1;
   --text-muted: #7087a4;
   --negative: #f31a1a;
+  --positive: #2fbf6e;
 }
 
 :root[data-theme="light"] {
@@ -26,6 +27,7 @@
   --text-inactive: #7087a4;
   --text-muted: #7087a4;
   --negative: #f31a1a;
+  --positive: #2fbf6e;
 }
 
 @theme inline {

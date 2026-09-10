@@ -144,16 +144,9 @@ function OrderForm({
             className={inputClass}
           />
         </Field>
-        <Field label="Нал/безнал" required>
-          <select
-            name="paymentMethod"
-            required
-            defaultValue={defaults?.paymentMethod ?? ""}
-            className={inputClass}
-          >
-            <option value="" disabled>
-              Выберите...
-            </option>
+        <Field label="Нал/безнал">
+          <select name="paymentMethod" defaultValue={defaults?.paymentMethod ?? ""} className={inputClass}>
+            <option value="">Выберите...</option>
             {PAYMENT_METHODS.map((pm) => (
               <option key={pm} value={pm}>
                 {PAYMENT_METHOD_LABELS[pm]}

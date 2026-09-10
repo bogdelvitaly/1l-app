@@ -107,3 +107,14 @@ export function IosArrowIcon({ className }: IconProps) {
     </svg>
   );
 }
+
+export function CheckIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" className={className}>
+      <path
+        d="M13.7071 3.29289C14.0976 3.68342 14.0976 4.31658 13.7071 4.70711L6.70711 11.7071C6.31658 12.0976 5.68342 12.0976 5.29289 11.7071L2.29289 8.70711C1.90237 8.31658 1.90237 7.68342 2.29289 7.29289C2.68342 6.90237 3.31658 6.90237 3.70711 7.29289L6 9.58579L12.2929 3.29289C12.6834 2.90237 13.3166 2.90237 13.7071 3.29289Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}

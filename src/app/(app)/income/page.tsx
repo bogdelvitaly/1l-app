@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { PAYMENT_METHOD_SHORT_LABELS, INCOME_SOURCE_LABELS } from "@/lib/types";
 import { IncomeModal } from "@/components/IncomeModal";
+import { AutoOpenIncomeModal } from "@/components/AutoOpenIncomeModal";
 import { TypeBadge } from "@/components/TypeBadge";
 import { Badge } from "@/components/Badge";
 import { SearchBox } from "@/components/SearchBox";
@@ -36,10 +37,13 @@ export default async function IncomePage(props: PageProps<"/income">) {
   const q = typeof searchParams?.q === "string" ? searchParams.q : "";
   const page = Math.max(1, Number(searchParams?.page) || 1);
   const pageSize = Number(searchParams?.pageSize) || 10;
+  // Set by the "Доход добавлен" link on a Заказы card (see QuickIncomeModal) — opens
+  // that record's edit modal on load regardless of which page it'd fall on.
+  const openId = typeof searchParams?.open === "string" ? searchParams.open : undefined;
 
   const where = q ? { saleDetails: { contains: q } } : {};
 
-  const [incomes, total, incomeAgg, expenseAgg, productTypes, products] = await Promise.all([
+  const [incomes, total, incomeAgg, expenseAgg, productTypes, products, openIncome] = await Promise.all([
     prisma.income.findMany({
       where,
       orderBy: { date: "desc" },
@@ -52,6 +56,7 @@ export default async function IncomePage(props: PageProps<"/income">) {
     prisma.expense.aggregate({ _sum: { amount: true } }),
     prisma.productType.findMany({ orderBy: { createdAt: "asc" } }),
     prisma.product.findMany({ orderBy: { createdAt: "asc" } }),
+    openId ? prisma.income.findUnique({ where: { id: openId } }) : null,
   ]);
   const productsForModal = products.map((p) => ({ id: p.id, name: p.name, price: p.price }));
 
@@ -207,6 +212,26 @@ export default async function IncomePage(props: PageProps<"/income">) {
           </button>
         }
       />
+
+      {openIncome && (
+        <AutoOpenIncomeModal
+          action={updateIncome.bind(null, openIncome.id)}
+          products={productsForModal}
+          defaults={{
+            date: openIncome.date.toISOString().slice(0, 10),
+            saleDetails: openIncome.saleDetails ?? undefined,
+            amount: openIncome.amount,
+            shipping: openIncome.shipping,
+            delivery: openIncome.delivery,
+            paymentMethod: openIncome.paymentMethod,
+            productId: openIncome.productId ?? undefined,
+            buyer: openIncome.buyer ?? undefined,
+            city: openIncome.city ?? undefined,
+            source: openIncome.source ?? undefined,
+            taxable: openIncome.taxable,
+          }}
+        />
+      )}
     </div>
   );
 }
