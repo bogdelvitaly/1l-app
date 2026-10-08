@@ -108,6 +108,21 @@ export function IosArrowIcon({ className }: IconProps) {
   );
 }
 
+export function GripIcon({ className }: IconProps) {
+  return (
+    <svg viewBox="0 0 10 16" width="10" height="16" fill="none" className={className}>
+      <g fill="currentColor">
+        <circle cx="2" cy="2" r="1.5" />
+        <circle cx="8" cy="2" r="1.5" />
+        <circle cx="2" cy="8" r="1.5" />
+        <circle cx="8" cy="8" r="1.5" />
+        <circle cx="2" cy="14" r="1.5" />
+        <circle cx="8" cy="14" r="1.5" />
+      </g>
+    </svg>
+  );
+}
+
 export function CheckIcon({ className }: IconProps) {
   return (
     <svg viewBox="0 0 16 16" width="14" height="14" fill="none" className={className}>

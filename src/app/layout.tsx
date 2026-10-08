@@ -13,8 +13,8 @@ export const metadata: Metadata = {
   title: "1L — учёт мастерской",
   description: "Учёт продаж, доходов, расходов и сертификатов",
   manifest: "/manifest.json",
+  // Browser-tab icon comes from src/app/icon.svg + favicon.ico (file conventions).
   icons: {
-    icon: [{ url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
     apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
   },
   appleWebApp: { capable: true, statusBarStyle: "default", title: "1L" },

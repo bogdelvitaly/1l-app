@@ -66,8 +66,45 @@ export async function createProduct(formData: FormData) {
     productTypeId: formData.get("productTypeId"),
   });
 
-  await prisma.product.create({ data });
+  // New products go to the end of the manually-ordered list.
+  const last = await prisma.product.aggregate({ _max: { sortOrder: true } });
+  await prisma.product.create({ data: { ...data, sortOrder: (last._max.sortOrder ?? -1) + 1 } });
   revalidatePath("/settings");
+}
+
+export async function updateProduct(id: string, formData: FormData) {
+  const session = await auth();
+  if (!session?.user) throw new Error("Unauthorized");
+
+  const data = productSchema.parse({
+    name: formData.get("name"),
+    price: formData.get("price"),
+    color: formData.get("color"),
+    productTypeId: formData.get("productTypeId"),
+  });
+
+  await prisma.product.update({ where: { id }, data });
+  // Product name/price/type/color show up in Доходы, Заказы and Магазины too.
+  revalidatePath("/settings");
+  revalidatePath("/income");
+  revalidatePath("/orders");
+  revalidatePath("/stores");
+}
+
+// Receives the full list of product ids in their new order and rewrites sortOrder
+// to match. Ids not in the list keep their current value (shouldn't happen —
+// the table always sends every row).
+export async function reorderProducts(orderedIds: string[]) {
+  const session = await auth();
+  if (!session?.user) throw new Error("Unauthorized");
+
+  await prisma.$transaction(
+    orderedIds.map((id, index) => prisma.product.update({ where: { id }, data: { sortOrder: index } })),
+  );
+  revalidatePath("/settings");
+  revalidatePath("/income");
+  revalidatePath("/orders");
+  revalidatePath("/stores");
 }
 
 export async function deleteProduct(formData: FormData) {

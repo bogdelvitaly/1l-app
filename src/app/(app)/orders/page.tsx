@@ -1,5 +1,6 @@
 import { getBoardData } from "@/lib/trello";
 import { prisma } from "@/lib/prisma";
+import { PRODUCT_ORDER } from "@/lib/productOrder";
 import { OrdersBoard } from "@/components/OrdersBoard";
 import { OrderModal } from "@/components/OrderModal";
 import { createOrderAction } from "./actions";
@@ -7,7 +8,7 @@ import { createOrderAction } from "./actions";
 export default async function OrdersPage() {
   const [{ lists, cardsByList }, products, linkedIncomes] = await Promise.all([
     getBoardData(),
-    prisma.product.findMany({ orderBy: { createdAt: "asc" } }),
+    prisma.product.findMany({ orderBy: PRODUCT_ORDER }),
     // Which cards already have a "Добавить доход" row — see quickAddIncomeAction —
     // so their card shows "Доход добавлен" instead of the button.
     prisma.income.findMany({ where: { trelloCardId: { not: null } }, select: { id: true, trelloCardId: true } }),

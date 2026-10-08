@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { PRODUCT_ORDER } from "@/lib/productOrder";
 import { PAYMENT_METHOD_SHORT_LABELS, INCOME_SOURCE_LABELS } from "@/lib/types";
 import { IncomeModal } from "@/components/IncomeModal";
 import { AutoOpenIncomeModal } from "@/components/AutoOpenIncomeModal";
@@ -55,7 +56,7 @@ export default async function IncomePage(props: PageProps<"/income">) {
     prisma.income.aggregate({ _sum: { amount: true } }),
     prisma.expense.aggregate({ _sum: { amount: true } }),
     prisma.productType.findMany({ orderBy: { createdAt: "asc" } }),
-    prisma.product.findMany({ orderBy: { createdAt: "asc" } }),
+    prisma.product.findMany({ orderBy: PRODUCT_ORDER }),
     openId ? prisma.income.findUnique({ where: { id: openId } }) : null,
   ]);
   const productsForModal = products.map((p) => ({ id: p.id, name: p.name, price: p.price }));

@@ -114,6 +114,10 @@ model Product {
   productTypeId String
   productType   ProductType @relation(fields: [productTypeId], references: [id])
   createdAt     DateTime    @default(now())
+  // Manual order set by dragging rows in Настройки → Товары. Existing rows all
+  // start at 0 and tie-break on createdAt (see PRODUCT_ORDER in src/lib/productOrder.ts),
+  // so nothing moves until the first reorder.
+  sortOrder     Int         @default(0)
 
   incomes Income[]
   stores  StoreProduct[]

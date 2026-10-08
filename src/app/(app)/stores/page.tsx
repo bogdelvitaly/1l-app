@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { PRODUCT_ORDER } from "@/lib/productOrder";
 import { createStore, deleteStore, addStoreProduct, removeStoreProduct, sellStoreProduct } from "./actions";
 import { Badge } from "@/components/Badge";
 import { ConfirmDeleteForm } from "@/components/ConfirmDeleteForm";
@@ -8,13 +9,23 @@ function fmt(n: number) {
   return n.toLocaleString("ru-RU", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
+// Same 32-column grid approach as the Доходы table, so rows line up and long
+// type labels truncate instead of wrapping into the neighbouring columns.
+const GRID = "grid grid-cols-[repeat(32,minmax(0,1fr))] items-center px-6 min-w-[820px]";
+const COLUMNS = [
+  { label: "Товар", col: "col-[1/span_9]" },
+  { label: "Тип", col: "col-[10/span_12]" },
+  { label: "Сумма", col: "col-[22/span_5]" },
+  { label: "", col: "col-[27/span_6]" },
+];
+
 export default async function StoresPage() {
   const [stores, products] = await Promise.all([
     prisma.store.findMany({
       orderBy: { createdAt: "asc" },
       include: { products: { include: { product: { include: { productType: true } } } } },
     }),
-    prisma.product.findMany({ include: { productType: true }, orderBy: { createdAt: "asc" } }),
+    prisma.product.findMany({ include: { productType: true }, orderBy: PRODUCT_ORDER }),
   ]);
 
   const productsForModal = products.map((p) => ({ id: p.id, name: p.name, price: p.price }));
@@ -71,46 +82,73 @@ export default async function StoresPage() {
                   </ConfirmDeleteForm>
                 </div>
 
-                <div className="mb-4 flex flex-col gap-2">
-                  {store.products.map((sp) => (
-                    <div key={sp.id} className="flex items-center justify-between gap-3 text-sm">
-                      <div className="min-w-0 flex-1">
+                <div className="mb-4 w-full overflow-x-auto rounded-xl border border-[var(--devider)]">
+                  <div className={`${GRID} h-12 border-b border-[var(--devider)]`}>
+                    {COLUMNS.map((col) => (
+                      <div
+                        key={col.label || "actions"}
+                        className={`${col.col} truncate px-2 text-xs font-semibold text-[var(--text-inactive)]`}
+                      >
+                        {col.label}
+                      </div>
+                    ))}
+                  </div>
+
+                  {store.products.map((sp, i) => (
+                    <div
+                      key={sp.id}
+                      className={`${GRID} h-16`}
+                      style={i % 2 === 1 ? { backgroundColor: "rgba(123,160,175,0.05)" } : undefined}
+                    >
+                      <div className="col-[1/span_9] px-2">
                         <Badge color={sp.product.color} label={sp.product.name} />
                       </div>
-                      <span className="w-24 shrink-0 text-[var(--text-muted)]">{sp.product.productType.label}</span>
-                      <span className="w-20 shrink-0 text-[var(--text-primary)]">{fmt(sp.product.price)} BYN</span>
-                      <IncomeModal
-                        title="Добавить доход"
-                        action={sellStoreProduct.bind(null, sp.id)}
-                        products={productsForModal}
-                        defaults={{
-                          productId: sp.product.id,
-                          city: store.location,
-                          amount: sp.product.price,
-                          source: "STORE",
-                          saleDetails: `${store.name}, ${store.location}`,
-                        }}
-                        trigger={
-                          <button
-                            type="button"
-                            className="shrink-0 cursor-pointer rounded-lg bg-[var(--accent-orange)] px-3 py-1.5 text-xs font-medium whitespace-nowrap text-white hover:brightness-110"
-                          >
-                            Продано
-                          </button>
-                        }
-                      />
-                      <ConfirmDeleteForm
-                        action={removeStoreProduct}
-                        id={sp.id}
-                        ariaLabel="Убрать из магазина"
-                        className="shrink-0"
+                      <div
+                        className="col-[10/span_12] truncate px-2 text-sm font-medium text-[var(--text-primary)]"
+                        title={sp.product.productType.label}
                       >
-                        <span className="text-[var(--negative)]">✕</span>
-                      </ConfirmDeleteForm>
+                        {sp.product.productType.label}
+                      </div>
+                      <div className="col-[22/span_5] px-2 text-sm font-medium text-[var(--text-primary)]">
+                        {fmt(sp.product.price)} BYN
+                      </div>
+                      <div className="col-[27/span_6] flex items-center justify-end gap-4 px-2">
+                        <IncomeModal
+                          title="Добавить доход"
+                          action={sellStoreProduct.bind(null, sp.id)}
+                          products={productsForModal}
+                          defaults={{
+                            productId: sp.product.id,
+                            city: store.location,
+                            amount: sp.product.price,
+                            source: "STORE",
+                            saleDetails: `${store.name}, ${store.location}`,
+                          }}
+                          trigger={
+                            <button
+                              type="button"
+                              className="shrink-0 cursor-pointer rounded-lg bg-[var(--accent-orange)] px-3 py-1.5 text-xs font-medium whitespace-nowrap text-white hover:brightness-110"
+                            >
+                              Продано
+                            </button>
+                          }
+                        />
+                        <ConfirmDeleteForm
+                          action={removeStoreProduct}
+                          id={sp.id}
+                          ariaLabel="Убрать из магазина"
+                          className="shrink-0 cursor-pointer"
+                        >
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src="/icons/figma/trash.svg" alt="" width={20} height={20} />
+                        </ConfirmDeleteForm>
+                      </div>
                     </div>
                   ))}
                   {store.products.length === 0 && (
-                    <p className="text-center text-sm text-[var(--text-inactive)]">Нет товаров в магазине</p>
+                    <div className="flex h-16 items-center justify-center text-sm text-[var(--text-inactive)]">
+                      Нет товаров в магазине
+                    </div>
                   )}
                 </div>
 

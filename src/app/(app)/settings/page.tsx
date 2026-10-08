@@ -7,13 +7,13 @@ import {
   createComponent,
   deleteComponent,
   createProduct,
-  deleteProduct,
   importExcel,
   createUser,
   deleteUser,
 } from "./actions";
-import { Badge } from "@/components/Badge";
+import { PRODUCT_ORDER } from "@/lib/productOrder";
 import { ConfirmDeleteForm } from "@/components/ConfirmDeleteForm";
+import { ProductsTable } from "@/components/ProductsTable";
 import { ImportSubmitButton, ImportOverlay } from "@/components/ImportProgress";
 
 function fmt(n: number) {
@@ -37,7 +37,7 @@ export default async function SettingsPage(props: PageProps<"/settings">) {
     prisma.user.findMany({ orderBy: { createdAt: "asc" } }),
     prisma.product.findMany({
       include: { productType: true },
-      orderBy: { createdAt: "asc" },
+      orderBy: PRODUCT_ORDER,
     }),
   ]);
 
@@ -363,38 +363,19 @@ export default async function SettingsPage(props: PageProps<"/settings">) {
               </button>
             </form>
 
-            <div className="w-full overflow-x-auto rounded-xl border border-[var(--devider)] bg-[var(--surface)]">
-              <div className="flex h-12 min-w-[650px] items-center border-b border-[var(--devider)] px-6">
-                <div className="min-w-[200px] flex-1 px-2 text-xs font-semibold text-[var(--text-muted)]">Имя</div>
-                <div className="flex-1 px-2 text-xs font-semibold text-[var(--text-muted)]">Тип товара</div>
-                <div className="flex-1 px-2 text-xs font-semibold text-[var(--text-muted)]">Сумма</div>
-                <div className="w-16 shrink-0 px-2" />
-              </div>
-              {products.map((p, i) => (
-                <div
-                  key={p.id}
-                  className="flex h-16 min-w-[650px] items-center px-6"
-                  style={i % 2 === 1 ? { backgroundColor: "rgba(123,160,175,0.05)" } : undefined}
-                >
-                  <div className="min-w-[200px] flex-1 px-2">
-                    <Badge color={p.color} label={p.name} />
-                  </div>
-                  <div className="flex-1 px-2 text-sm font-medium text-[var(--text-primary)]">
-                    {p.productType.label}
-                  </div>
-                  <div className="flex-1 px-2 text-sm font-medium text-[var(--text-primary)]">{fmt(p.price)} BYN</div>
-                  <div className="w-16 shrink-0 px-2 text-right">
-                    <ConfirmDeleteForm action={deleteProduct} id={p.id} ariaLabel="Удалить товар">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src="/icons/figma/trash.svg" alt="" width={20} height={20} />
-                    </ConfirmDeleteForm>
-                  </div>
-                </div>
-              ))}
-              {products.length === 0 && (
-                <div className="px-6 py-10 text-center text-sm text-[var(--text-muted)]">Пока нет товаров</div>
-              )}
-            </div>
+            {/* Keyed on the data so the table's local (drag-reordered) copy resets when the server list changes. */}
+            <ProductsTable
+              key={products.map((p) => `${p.id}:${p.name}:${p.price}:${p.color}:${p.productTypeId}`).join("|")}
+              products={products.map((p) => ({
+                id: p.id,
+                name: p.name,
+                price: p.price,
+                color: p.color,
+                productTypeId: p.productTypeId,
+                typeLabel: p.productType.label,
+              }))}
+              productTypes={productTypes.map((pt) => ({ id: pt.id, label: pt.label }))}
+            />
           </section>
         )}
       </div>
