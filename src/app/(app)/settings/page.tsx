@@ -230,7 +230,7 @@ export default async function SettingsPage(props: PageProps<"/settings">) {
               </button>
             </form>
 
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 lg:max-[1921px]:grid-cols-2 min-[1921px]:grid-cols-3">
               {productTypes.map((pt) => {
                 const total = pt.components.reduce((sum, c) => sum + c.price, 0);
                 const addComponent = createComponent.bind(null, pt.id);
