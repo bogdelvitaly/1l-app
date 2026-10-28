@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
+import { useFormStatus } from "react-dom";
 import { PAYMENT_METHODS, PAYMENT_METHOD_LABELS, INCOME_SOURCES, INCOME_SOURCE_LABELS } from "@/lib/types";
 import { Modal } from "./Modal";
 import { Field, inputClass, DateInput } from "./form-fields";
@@ -65,6 +66,22 @@ function OrderForm({
   submitLabel: string;
 }) {
   const amountRef = useRef<HTMLInputElement | null>(null);
+  // Identifies this form instance to createOrderAction, which ignores a second
+  // submit carrying the same id (ignored by updateOrderAction).
+  const [submissionId] = useState(() => crypto.randomUUID());
+  // A ref rather than state: a fast double click fires both submits before React
+  // has re-rendered, so only something synchronous can stop the second one.
+  const submitting = useRef(false);
+
+  async function guardedSubmit(formData: FormData) {
+    if (submitting.current) return;
+    submitting.current = true;
+    try {
+      await handleSubmit(formData);
+    } finally {
+      submitting.current = false;
+    }
+  }
 
   function onProductChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const product = products.find((p) => p.id === e.target.value);
@@ -74,7 +91,8 @@ function OrderForm({
   }
 
   return (
-    <form action={handleSubmit} className="flex flex-col gap-6">
+    <form action={guardedSubmit} className="flex flex-col gap-6">
+      <input type="hidden" name="submissionId" value={submissionId} />
       <div className="flex flex-col gap-4 sm:flex-row">
         <Field label="Товар" required>
           <select
@@ -177,12 +195,22 @@ function OrderForm({
         </Field>
       </div>
 
-      <button
-        type="submit"
-        className="h-11 w-full rounded-lg bg-[var(--accent-orange)] text-base font-medium text-white hover:brightness-110"
-      >
-        {submitLabel}
-      </button>
+      <SubmitButton label={submitLabel} />
     </form>
+  );
+}
+
+// Disabled while the action runs — also blocks Enter-key resubmits, since an
+// implicit submit is skipped when the form's default button is disabled.
+function SubmitButton({ label }: { label: string }) {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="h-11 w-full rounded-lg bg-[var(--accent-orange)] text-base font-medium text-white hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      {pending ? "Сохраняем..." : label}
+    </button>
   );
 }

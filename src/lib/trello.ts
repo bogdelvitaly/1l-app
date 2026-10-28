@@ -91,6 +91,11 @@ export async function getIntakeListId(): Promise<string> {
   return target.id;
 }
 
+// Игорь Шатило — every new order card is assigned to him, so Trello sends him its
+// "added to a card" notification (it never notifies the person who did the action,
+// and the API token belongs to a different account). Overridable via env.
+const DEFAULT_ASSIGNEE_ID = process.env.TRELLO_DEFAULT_MEMBER_ID || "54c54caf804abb652f0e6740";
+
 export async function createTrelloCard(params: { idList: string; name: string; desc: string; due?: string | null }) {
   const { key, token } = trelloAuth();
   const url = new URL(`${TRELLO_BASE}/cards`);
@@ -100,6 +105,9 @@ export async function createTrelloCard(params: { idList: string; name: string; d
   url.searchParams.set("name", params.name);
   url.searchParams.set("desc", params.desc);
   if (params.due) url.searchParams.set("due", params.due);
+  // An unknown member id doesn't fail the request (Trello just ignores it), so a
+  // stale id can never block order creation.
+  url.searchParams.set("idMembers", DEFAULT_ASSIGNEE_ID);
   const res = await fetch(url.toString(), { method: "POST" });
   if (!res.ok) throw new Error(`Trello create error: ${res.status}`);
   return (await res.json()) as TrelloCard;

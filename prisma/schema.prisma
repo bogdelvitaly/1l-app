@@ -161,6 +161,15 @@ model OrderSequence {
   counter  Int    @default(0)
 }
 
+// One row per "Добавить заказ" form instance (random id generated when the form
+// opens). createOrderAction inserts it before doing anything else, so a double
+// click / double Enter / retry of the same form hits the primary key and is
+// ignored instead of creating a second card with the next order number.
+model OrderSubmission {
+  id        String   @id
+  createdAt DateTime @default(now())
+}
+
 model ChangeLog {
   id         String   @id @default(cuid())
   entityType String // Expense | Income | Certificate

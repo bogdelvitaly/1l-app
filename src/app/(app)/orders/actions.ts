@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { moveTrelloCard, createTrelloCard, updateTrelloCard, getIntakeListId, getTrelloCardName } from "@/lib/trello";
@@ -121,10 +122,32 @@ export async function createOrderAction(formData: FormData) {
   const session = await auth();
   if (!session?.user) throw new Error("Unauthorized");
 
-  const orderNumber = await nextOrderNumber();
-  const { name, desc, due } = await buildOrderCardFromForm(formData, orderNumber);
-  const idList = await getIntakeListId();
-  await createTrelloCard({ idList, name, desc, due });
+  // Each open "Добавить заказ" form carries its own random id (see OrderModal).
+  // Claiming it first makes a repeated submit of the same form — double click,
+  // double Enter, slow-network retry — a no-op instead of a second card with the
+  // next number. Released again below if creation fails, so retrying still works.
+  const submissionId = String(formData.get("submissionId") || "");
+  if (submissionId) {
+    await prisma.orderSubmission
+      .deleteMany({ where: { createdAt: { lt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) } } })
+      .catch(() => {});
+    try {
+      await prisma.orderSubmission.create({ data: { id: submissionId } });
+    } catch (e) {
+      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002") return;
+      throw e;
+    }
+  }
+
+  try {
+    const orderNumber = await nextOrderNumber();
+    const { name, desc, due } = await buildOrderCardFromForm(formData, orderNumber);
+    const idList = await getIntakeListId();
+    await createTrelloCard({ idList, name, desc, due });
+  } catch (e) {
+    if (submissionId) await prisma.orderSubmission.delete({ where: { id: submissionId } }).catch(() => {});
+    throw e;
+  }
 
   revalidatePath("/orders");
 }
