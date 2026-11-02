@@ -11,7 +11,8 @@
     "db:push": "prisma db push",
     "db:generate": "prisma generate",
     "db:seed": "tsx prisma/seed.ts",
-    "import:legacy": "tsx scripts/import-legacy-excel.ts"
+    "import:legacy": "tsx scripts/import-legacy-excel.ts",
+    "backup:weekly": "tsx scripts/weekly-backup.ts"
   },
   "dependencies": {
     "@pdf-lib/fontkit": "^1.1.1",
